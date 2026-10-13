@@ -124,6 +124,8 @@ commit.
 - `docs/THREAT_MODEL.md`: who it defends against, and where it stops.
 - `docs/FORMATS.md`: every file format, byte by byte.
 - `docs/ARCHITECTURE.md`, `docs/SYNC.md`, `docs/CREDENTIAL_PROVIDER.md`.
+- The [privacy policy](https://ionized-lychee-386.notion.site/Ringer-Vault-Privacy-Policy-3ea62d06f80a801a929ff1246c6bf913)
+  for the app and the browser extension.
 
 ## Reporting a problem
 
