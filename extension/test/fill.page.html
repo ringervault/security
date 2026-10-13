@@ -18,6 +18,14 @@ page(`
 let r = fillCredential({ username: 'ada@x.example', password: 'pw-1' });
 results.hiddenTraps = { filled: r.filled, real: [val('u'), val('p')], traps: [val('trap1'), val('trap2'), val('trap3')] };
 
+// 1b. Clipped away: inside a zero-size box that hides overflow, or clip-path.
+page(`
+  <div style="width:0;height:0;overflow:hidden"><input type="password" id="clip1"></div>
+  <input type="password" id="clip2" style="clip-path: inset(50%)">
+  <div style="height:80px;overflow:hidden"><form><input type="email" id="cu"><input type="password" id="cp"></form></div>`);
+r = fillCredential({ username: 'ada@x.example', password: 'pw-1b' });
+results.clipped = { traps: [val('clip1'), val('clip2')], real: [val('cu'), val('cp')] };
+
 // 2. Two forms: the one the person is in is filled, the other is not.
 page(`
   <form id="a"><input type="email" id="ua"><input type="password" id="pa"></form>

@@ -114,6 +114,24 @@ void main() {
           LinkCheck.unknown);
     });
 
+    test('a site that sends its file a byte at a time cannot hold the check open', () async {
+      // Each byte arrives well inside the timeout; the whole never does.
+      Stream<List<int>> drip() async* {
+        for (final b in utf8.encode(statements())) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          yield [b];
+        }
+      }
+      final links = AssetLinks(
+        client: MockClient.streaming((request, _) async => http.StreamedResponse(drip(), 200)),
+        timeout: const Duration(milliseconds: 200),
+      );
+      final watch = Stopwatch()..start();
+      expect(await links.check(site: 'amazon.in', packageName: pkg, certificateSha256: cert),
+          LinkCheck.unknown);
+      expect(watch.elapsed, lessThan(const Duration(seconds: 2)));
+    });
+
     test('a site that never answers gives up', () async {
       final links = AssetLinks(
         client: MockClient((_) => Future.delayed(const Duration(seconds: 30), () => http.Response('[]', 200))),

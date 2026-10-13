@@ -84,15 +84,20 @@ void main() {
     });
 
     test('rates length and variety upward', () {
-      expect(estimateSecretStrength('lanternharbor'), SecretStrength.fair);
+      // Two dictionary words are what a guesser tries first.
+      expect(estimateSecretStrength('lanternharbor'), SecretStrength.weak);
       // Many kinds of character, all of them predictable.
       expect(estimateSecretStrength('Password@12345'), SecretStrength.weak);
       expect(
         estimateSecretStrength('Lantern-Harbor1'),
-        SecretStrength.fair,
+        SecretStrength.weak,
       );
       expect(
         estimateSecretStrength('Lantern-Harbor-Cedar-99'),
+        SecretStrength.fair,
+      );
+      expect(
+        estimateSecretStrength('Lantern-Harbor-Cedar-Opal-Zebra-99'),
         SecretStrength.veryStrong,
       );
     });

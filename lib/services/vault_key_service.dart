@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:ringer_vault/utils/secret_text.dart';
 
 /// Owns the vault's key material.
 ///
@@ -168,23 +169,29 @@ class VaultKeyService {
     if (envelopeB64 == null || saltB64 == null) {
       // Nothing to open, but the same work as if there were: how long a
       // PIN takes to refuse must not say whether this vault exists.
-      await _deriveKek(pin: pin, salt: _randomBytes(_saltLengthBytes), params: _KdfParams.defaults());
+      for (final form in await SecretText.forms(pin)) {
+        await _deriveKek(pin: form, salt: _randomBytes(_saltLengthBytes), params: _KdfParams.defaults());
+      }
       return null;
     }
 
     final params = await _readKdfParams(isDecoy);
-    final kek = await _deriveKek(
-      pin: pin,
-      salt: base64Decode(saltB64),
-      params: params,
-    );
-
-    try {
-      return await _unseal(base64Decode(envelopeB64), kek);
-    } catch (_) {
-      // GCM tag mismatch: wrong PIN, or the envelope was tampered with.
-      return null;
+    // Every form is tried, always all of them, whichever opens: stopping at
+    // the first would make a right secret quicker than a wrong one.
+    Uint8List? opened;
+    for (final form in await SecretText.forms(pin)) {
+      final kek = await _deriveKek(
+        pin: form,
+        salt: base64Decode(saltB64),
+        params: params,
+      );
+      try {
+        opened ??= await _unseal(base64Decode(envelopeB64), kek);
+      } catch (_) {
+        // GCM tag mismatch: wrong PIN, or the envelope was tampered with.
+      }
     }
+    return opened;
   }
 
   /// Recovers the master key from the biometric envelope.
@@ -304,7 +311,7 @@ class VaultKeyService {
     final salt = _randomBytes(_saltLengthBytes);
     final params = _KdfParams.defaults();
 
-    final kek = await _deriveKek(pin: pin, salt: salt, params: params);
+    final kek = await _deriveKek(pin: await SecretText.nfc(pin), salt: salt, params: params);
     final envelope = await _seal(masterKey, kek);
 
     await _storage.write(key: _saltKey(isDecoy), value: base64Encode(salt));
@@ -397,6 +404,16 @@ class VaultKeyService {
 
 enum _KdfAlgorithm { argon2id, pbkdf2 }
 
+/// A vault's key was sealed by a newer version of Ringer Vault, with a key
+/// function this version does not know.
+class NewerVaultException implements Exception {
+  const NewerVaultException();
+
+  @override
+  String toString() =>
+      'This vault was set up by a newer version of Ringer Vault. Update the app to open it.';
+}
+
 class _KdfParams {
   final _KdfAlgorithm algorithm;
   final int memoryKib;
@@ -431,16 +448,22 @@ class _KdfParams {
       };
 
   /// `alg` is absent on vaults sealed before the web path existed; those were
-  /// all Argon2id.
-  factory _KdfParams.fromJson(Map<String, dynamic> json) => _KdfParams(
-        algorithm: _KdfAlgorithm.values.firstWhere(
-          (a) => a.name == json['alg'],
-          orElse: () => _KdfAlgorithm.argon2id,
-        ),
-        memoryKib: json['m'] as int,
-        iterations: json['t'] as int,
-        parallelism: json['p'] as int,
-      );
+  /// all Argon2id. Any other name is a key function this version does not
+  /// know: refused as newer, never guessed at (which would look like a
+  /// wrong PIN, and count towards the lockout).
+  factory _KdfParams.fromJson(Map<String, dynamic> json) {
+    final name = json['alg'];
+    final algorithm = name == null
+        ? _KdfAlgorithm.argon2id
+        : _KdfAlgorithm.values.where((a) => a.name == name).firstOrNull;
+    if (algorithm == null) throw const NewerVaultException();
+    return _KdfParams(
+      algorithm: algorithm,
+      memoryKib: json['m'] as int,
+      iterations: json['t'] as int,
+      parallelism: json['p'] as int,
+    );
+  }
 }
 
 class _KekRequest {

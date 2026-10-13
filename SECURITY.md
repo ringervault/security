@@ -69,12 +69,21 @@ Vault sees apps with a launcher icon and apps that open web links
 vault's encryption with the entry, shown only after the same check as
 revealing its password, and synced with it.
 
+**Generated passphrases** are five words from the EFF Large Wordlist (7,776
+words, about 12.9 bits each) and a number: about 71 bits. The strength
+meter counts a word from that list at what it is worth to someone guessing
+from it, not by its letters, so ordinary dictionary words no longer look
+stronger than they are. A sync passphrase must reach 50 bits. Passphrases with accented letters
+make the same key whichever way a keyboard composes them (Unicode NFC).
+
 **Wrong attempts.** Unlocking is refused for 30 seconds after the 5th wrong
 attempt in a row, 5 minutes after the 10th, 15 after the 15th and an hour
 after the 20th; only a correct unlock resets the count, so waiting out each
 lockout does not. Lockouts are timed on the time since the phone started,
 which changing the date and time does not move, and run again in full after
-a restart. Self-destruct, when armed, counts the same attempts.
+a restart. Self-destruct, when armed, counts the same attempts. A vault
+sealed by a newer version, with a key function this version does not know,
+is reported as such and never counted as a wrong attempt.
 
 **Fingerprint.** The fingerprint opens the real vault only, and is offered
 only after the real vault's PIN has been entered in the current run of the
@@ -98,9 +107,11 @@ changed or linked until it is answered.
 
 **The decoy's contents** are drawn afresh for every decoy: which of about 50
 services, which bank and which of its PINs, the owner's password habits
-(from many patterns and word lists), notes and dates. The generator is
-public, so it has no fixed recipe a decoy could be recognised by, and every
-entry can be changed or added to from inside the decoy.
+(from many patterns and word lists), notes and dates. No two decoys share a
+recipe, but every starting entry comes from a list anyone can read, so a
+decoy made only of those can look generated. Setting one up asks the owner
+to add or change a few entries of their own, which is what makes it
+believable.
 
 ## Known limits
 

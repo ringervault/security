@@ -113,6 +113,16 @@ void main() {
     expect(end!.difference(wall), const Duration(seconds: 30));
   }, timeout: const Timeout(Duration(minutes: 2)));
 
+  test('a restart on a phone that does not say which boot it is runs it again, not for days', () async {
+    boot = null;
+    elapsedMs = 5 * 24 * 3600 * 1000; // five days of uptime
+    await paced(4);
+    expect(await wrong(), isTrue);
+    elapsedMs = 2000; // restarted
+    final end = await AuthService().getLockoutTime();
+    expect(end!.difference(wall), const Duration(seconds: 30));
+  }, timeout: const Timeout(Duration(minutes: 2)));
+
   test('without the time since boot, the wall clock times it', () async {
     LockoutClock.debugNow = () => LockoutTime(wall);
     await paced(4);

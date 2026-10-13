@@ -27,7 +27,21 @@ export function fillCredential({ username, password }) {
     const left = rect.left + window.scrollX;
     const top = rect.top + window.scrollY;
     const pageWidth = Math.max(document.documentElement.scrollWidth, window.innerWidth);
-    return left + rect.width > 0 && top + rect.height > 0 && left < pageWidth;
+    if (left + rect.width <= 0 || top + rect.height <= 0 || left >= pageWidth) return false;
+    // Cut away by a box around it that clips what overflows it, or by a
+    // clip-path that leaves nothing showing. Scrolling boxes are left out:
+    // a field scrolled out of one is still a real field.
+    for (let node = el; node && node.nodeType === 1; node = node.parentElement) {
+      const s = node === el ? style : window.getComputedStyle(node);
+      if (/inset\(\s*(50|100)%|circle\(\s*0|ellipse\(\s*0/.test(s.clipPath ?? '')) return false;
+      if (node !== el && /hidden|clip/.test(`${s.overflowX} ${s.overflowY}`)) {
+        const box = node.getBoundingClientRect();
+        const w = Math.min(rect.right, box.right) - Math.max(rect.left, box.left);
+        const h = Math.min(rect.bottom, box.bottom) - Math.max(rect.top, box.top);
+        if (w < MIN_PX || h < MIN_PX) return false;
+      }
+    }
+    return true;
   };
 
   const NEVER = /search|query|otp|one-?time|2fa|two-?factor|verification|captcha|cvv|cvc|card|coupon|promo/i;

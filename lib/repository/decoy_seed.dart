@@ -37,7 +37,9 @@ class DecoyIdentity {
 /// Builds the contents of a decoy vault.
 ///
 /// A decoy is only as good as it is believable, and this code is public, so
-/// nothing in it may be a fixed recipe that a decoy could be recognised by.
+/// no two decoys share a recipe. Every starting entry still comes from the
+/// lists below, which anyone can read; setting a decoy up asks its owner to
+/// add a few entries of their own (settings_screen.dart).
 /// Every vault draws its own: which services (12 to 20 of about 50), which
 /// bank and which of its secrets, the owner's password habits (a few of many
 /// patterns, from long word lists, reused and varied the way people do,

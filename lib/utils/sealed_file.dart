@@ -60,11 +60,11 @@ const int sealedLanes = 1;
 /// Refused when reading, for the same reason as [_maxIterations]: a
 /// crafted file must not make the app run out of memory or settle for a
 /// weak key. A file is read before it can be authenticated, so these are
-/// what a stranger's file could demand: 256 MiB and 10 passes are four
-/// times what Ringer Vault writes, and still within what a phone can give.
+/// what a stranger's file could demand: 128 MiB and 6 passes are twice what
+/// Ringer Vault writes, and within what even a low-end phone can give.
 const int _minMemoryKib = 19 * 1024;
-const int _maxMemoryKib = 256 * 1024;
-const int _maxPasses = 10;
+const int _maxMemoryKib = 128 * 1024;
+const int _maxPasses = 6;
 const int _maxLanes = 8;
 
 const int _saltBytes = 16;

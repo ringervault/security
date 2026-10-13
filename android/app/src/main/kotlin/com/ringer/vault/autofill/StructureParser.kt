@@ -38,6 +38,9 @@ data class ParsedForm(
     val isUsable: Boolean get() = passwordId != null || usernameId != null
 }
 
+/** A web page's domain and scheme, as the browser reported them. */
+private data class Page(val domain: String, val scheme: String?)
+
 /**
  * Finds the username and password fields in another app's view tree.
  *
@@ -52,9 +55,6 @@ data class ParsedForm(
  * reporting it is actually a browser.
  */
 @RequiresApi(Build.VERSION_CODES.O)
-/** A web page's domain and scheme, as the browser reported them. */
-private data class Page(val domain: String, val scheme: String?)
-
 object StructureParser {
 
     private val USERNAME_HINTS = setOf(

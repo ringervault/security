@@ -75,6 +75,15 @@ object VaultSession {
                         result.success(null)
                     }
                     "fingerprintAllowed" -> result.success(fingerprintAllowed)
+                    // A secret in one Unicode form (NFC), so the same
+                    // passphrase typed on another device with letters
+                    // composed differently still makes the same key.
+                    "nfc" -> result.success(
+                        java.text.Normalizer.normalize(
+                            call.arguments as? String ?: "",
+                            java.text.Normalizer.Form.NFC,
+                        ),
+                    )
                     // The lockout's clock: time since boot, which changing
                     // the phone's date and time does not move, and which
                     // boot this is, so a restart is noticed.

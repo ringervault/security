@@ -323,7 +323,10 @@ On every open (`_load`):
 2. Read `written`, the count from secure storage.
 3. Try to open this vault's slot in `vault.rvc`. If it opens and its `count`
    is lower than `written`, the vault is refused as an older copy put back.
-   Otherwise it is the vault.
+   If it opens with a `count` above 1 and `written` is absent or unreadable,
+   it is refused too: the count is recorded straight after the first write,
+   so it can only be missing then, and removing it is what putting back an
+   older copy unnoticed would need. Otherwise it is the vault.
 4. If it does not open and `written > 0`, the vault was written before and
    is now unreadable. Open this vault's slot in `vault.rvc.prev`. If that
    fails, or its `count` is lower than `written - 1`, the vault is refused.
@@ -342,9 +345,11 @@ and 7, and is accepted. `.prev` is one write behind the current file, so it
 is accepted only down to `written - 1`. Anything older is refused, so
 damaging the current file cannot be used to bring back an older one.
 
-The rule protects against replaying an older `vault.rvc` only while the
-count records survive: a missing or unreadable count record is treated as 0
-(step 2), which disables the check for that open.
+A missing or unreadable count record no longer switches the check off
+(step 3): only a vault written exactly once may have none, after a stop
+between its first write and its first count. A keystore that lost its keys
+loses the vault's sealed key with them, so refusing locks nobody out of a
+vault that could otherwise have opened.
 
 ### Erasing
 
@@ -514,7 +519,7 @@ Both readers do the same, in this order:
    Iterations must be from 100,000 to 10,000,000, else "not ours".
 4. Version 3: the file must be longer than 15 bytes. Byte 5 must be `0x02`,
    else "made by a newer version". Then memory must be from 19,456 KiB
-   (19 MiB) to 262,144 KiB (256 MiB), passes from 1 to 10, lanes from 1 to
+   (19 MiB) to 131,072 KiB (128 MiB), passes from 1 to 6, lanes from 1 to
    8, and memory at least 8 × lanes, else "not ours". These limits stop a
    crafted file from stalling or crashing the device (they are checked
    before the file can be authenticated) or settling for a weak key. The
@@ -944,14 +949,20 @@ Found while writing this page. None is fixed here.
    - The `VaultKeyService` class comment says the master key "is what Hive
      actually encrypts with". The vault is now in `vault.rvc`, under keys
      derived from the master key; Hive is used only to read old files once.
-10. **Unknown `alg` in `vk_kdf_params` falls back to Argon2id** instead of
-    being refused, so a vault sealed by a future KDF would look like a wrong
-    PIN to an older build rather than "made by a newer version".
-11. **Rollback protection of `vault.rvc` depends on the count records.** A
-    missing or unreadable `vc_count_a` or `vc_count_b` reads as 0, which
-    accepts any copy of the file.
+10. **Fixed:** an unknown `alg` in `vk_kdf_params` is refused as "made by a
+    newer version", not guessed at as Argon2id; it is not counted as a
+    wrong attempt. An absent `alg` still means Argon2id, as on older vaults.
+11. **Fixed:** a missing or unreadable count record is refused for a vault
+    written more than once (section 2).
 12. **The Argon2 version number is implicit.** Neither side passes one; both
     rely on their library's default, and the shared vector catches drift.
-13. **No Unicode normalisation of passphrases or PINs** on either side. A
-    passphrase typed in a different normalisation form on another device
-    derives a different key.
+13. **Fixed:** secrets with letters that can be composed more than one way
+    are normalised to NFC for new keys, on both sides
+    (`lib/utils/secret_text.dart`, `secretForms` in `format.js`; Android's
+    `java.text.Normalizer` in the app). Opening tries NFC first, then the
+    text as typed, so anything sealed before still opens. Plain ASCII is
+    unchanged.
+14. **Timestamps from a wrong clock.** An edit's stamp follows the newest
+    stamp in the vault (a hybrid logical clock), but ignores any more than a
+    day ahead of this phone's clock, except the entry being edited itself.
+    Deletions stamped more than a day ahead are pruned at the next sync.

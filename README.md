@@ -56,7 +56,7 @@ The unlock timing check needs a phone or emulator:
 flutter test integration_test/unlock_timing_test.dart -d <device>
 ```
 
-At the time of publishing: 583 Dart tests and 212 extension tests, all
+At the time of publishing: 601 Dart tests and 217 extension tests, all
 passing. `test/extension_interchange_test.dart` runs the extension's own
 code from Dart, so the two prove they read and write each other's files.
 
@@ -78,7 +78,44 @@ code from Dart, so the two prove they read and write each other's files.
 | A decoy has no fixed recipe it could be recognised by | `decoy_seed.dart` | `decoy_seed_test.dart` |
 | The extension's quick-unlock PIN is sealed under a key from the vault's own Argon2id derivation | `extension/src/vault/format.js`, `quick.js` | `extension/test/quick.test.mjs`, `format_v3.test.mjs` |
 | Only visible boxes in one form are filled | `extension/src/fill.js`, `StructureParser.kt` | `extension/test/fill.page.html` (in a browser), `FieldWordsTest.kt` |
+| Generated passphrases are about 71 bits, and the strength meter counts a dictionary word at what it is worth | `password_generator.dart`, `passphrase_strength.dart`, `eff_words.g.dart` | `passphrase_strength_test.dart`, `extension/test/passphrase_strength.test.mjs` |
+| A removed write-count record does not switch rollback protection off | `storage_service.dart` | `rollback_counter_test.dart` |
+| A key record from a newer version is reported as such, never guessed at | `vault_key_service.dart` | `kdf_unknown_test.dart` |
+| Accented passphrases make the same key on every device | `secret_text.dart`, `extension/src/vault/format.js` | `secret_text_test.dart`, `extension/test/unicode_secret.test.mjs` |
 | Tests never touch real data | `test/support/render_harness.dart` | `leak_audit_test.dart` |
+
+## Review fixes
+
+Independent reviews of this repository are welcome, and what they find is
+fixed here in the open. Each item below came from a review of an earlier
+commit.
+
+**First review**
+- Waiting out a lockout no longer resets the count of wrong attempts;
+  lockouts grow to an hour, and changing the phone's clock or restarting
+  does not end one early (`lockout_test.dart`, `self_destruct_test.dart`).
+- A login saved while locked that only looks like an existing entry is
+  asked about at the unlock, never written over it or linked.
+- Decoy contents are drawn afresh for every decoy.
+- The extension's quick-unlock PIN is sealed under a key from the vault's
+  own Argon2id derivation, not 100,000 rounds of PBKDF2.
+- Field detection matches whole words, uses the password field's own
+  page, skips hidden and tiny fields, and identifies apps by their current
+  signing certificate.
+
+**Second review**
+- Generated passphrases come from the EFF Large Wordlist: about 71 bits,
+  up from 39.
+- A missing write-count record is refused for a vault written more than
+  once.
+- An unknown key function is reported as a newer version.
+- A lockout cannot outlast its own length after a restart.
+- Timestamps from a wrong clock cannot drag later edits forward.
+- Passphrases are normalised to Unicode NFC, with a fallback so nothing
+  sealed before is lost.
+- Argon2 settings read from a file are capped at 128 MiB and 6 passes.
+- The extension offers no password updates from plain-http pages and skips
+  clipped fields.
 
 ## Read next
 

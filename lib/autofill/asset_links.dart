@@ -111,7 +111,13 @@ class AssetLinks {
   /// The file's text, or null for no usable answer. Never follows a
   /// redirect: the specification forbids them, so a redirected answer could
   /// be some other site speaking.
-  Future<String?> _fetch(String host) async {
+  ///
+  /// [timeout] is for the whole exchange, not each piece of it: a site that
+  /// sends its file a byte at a time cannot hold the check open for longer.
+  Future<String?> _fetch(String host) =>
+      _fetchFile(host).timeout(timeout, onTimeout: () => null);
+
+  Future<String?> _fetchFile(String host) async {
     try {
       final request = http.Request('GET', Uri.https(host, '/.well-known/assetlinks.json'))
         ..followRedirects = false

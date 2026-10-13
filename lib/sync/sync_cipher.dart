@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:ringer_vault/utils/sealed_file.dart';
+import 'package:ringer_vault/utils/secret_text.dart';
 
 /// Encrypts and decrypts the sync file, without paying for the slow part more
 /// than once.
@@ -50,7 +51,7 @@ class SyncCipher {
     // one an attacker is likeliest to get, so it is refused instead.
     if (_web && _newestRead >= 3) throw const SyncDowngradeRefused();
     final params = SealParams.current(_salt ??= randomBytes(16), web: _web);
-    final key = await _keyFor(params);
+    final key = await _keyFor(params, await SecretText.nfc(_passphrase));
     return compute(_seal, (key, params, Uint8List.fromList(plain)));
   }
 
@@ -64,14 +65,18 @@ class SyncCipher {
     } on SealedFormatError {
       throw const SyncCipherError();
     }
-    final key = await _keyFor(parts.params);
-    final plain = await compute(_open, (parts, key));
-    if (plain == null) {
+    // The passphrase in one Unicode form first, then as typed, so a file
+    // sealed either way opens (lib/utils/secret_text.dart).
+    List<int>? plain;
+    for (final form in await SecretText.forms(_passphrase)) {
+      final key = await _keyFor(parts.params, form);
+      plain = await compute(_open, (parts, key));
+      if (plain != null) break;
       // A wrong passphrase derives a useless key; keeping it would only
       // make the next attempt with the right one look up the wrong entry.
-      _keys.remove(parts.params.id);
-      throw const SyncCipherError();
+      _keys.remove('${parts.params.id}|$form');
     }
+    if (plain == null) throw const SyncCipherError();
     // Adopt this salt, so the next write lets every device keep its key.
     _salt = parts.params.salt;
     if (parts.params.version > _newestRead) _newestRead = parts.params.version;
@@ -84,14 +89,15 @@ class SyncCipher {
     _salt = null;
   }
 
-  Future<List<int>> _keyFor(SealParams params) async {
-    final known = _keys[params.id];
+  Future<List<int>> _keyFor(SealParams params, String form) async {
+    final id = '${params.id}|$form';
+    final known = _keys[id];
     if (known != null) return known;
 
     // On a background isolate: this takes long enough to freeze a progress
     // animation if it ran on the one drawing the screen.
-    final bytes = await compute(_derive, (_passphrase, params));
-    _keys[params.id] = bytes;
+    final bytes = await compute(_derive, (form, params));
+    _keys[id] = bytes;
     return bytes;
   }
 }

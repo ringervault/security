@@ -208,3 +208,14 @@ test('a sync file\'s generation is read, and missing means the oldest', async ()
   assert.equal(generationOf({ generation: -1 }), 0);
   assert.equal(generationOf({ generation: '9' }), 0);
 });
+
+test('a page over plain http never replaces a saved password', () => {
+  const entries = [{
+    id: 'shop', title: 'Shop', username: 'ada', email: '', password: 'saved',
+    autofillTargets: ['site:shop.example'],
+  }];
+  assert.equal(planSave(entries, { url: 'https://shop.example/login', username: 'ada', password: 'new' }).action, SaveAction.update);
+  assert.equal(planSave(entries, { url: 'http://shop.example/login', username: 'ada', password: 'new' }).action, SaveAction.none);
+  assert.equal(planSave(entries, { url: 'http://shop.example/login', username: 'someone-else', password: 'x' }).action, SaveAction.create,
+    'a new login can still be saved, unlinked');
+});

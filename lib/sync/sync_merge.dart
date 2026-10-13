@@ -185,16 +185,20 @@ MergeResult merge({
 /// short enough that the file does not grow for ever.
 const Duration tombstoneLifetime = Duration(days: 180);
 
-/// Drops deletions older than [tombstoneLifetime].
+/// Drops deletions older than [tombstoneLifetime], and deletions stamped
+/// more than [futureLimit] ahead of [now]: a wrong clock wrote those, and
+/// they would otherwise never grow old enough to go.
 Map<String, SyncRecord> pruneTombstones(
   Map<String, SyncRecord> records, {
   required DateTime now,
   Duration keepFor = tombstoneLifetime,
+  Duration futureLimit = const Duration(days: 1),
 }) {
   final cutoff = now.toUtc().subtract(keepFor);
+  final ahead = now.toUtc().add(futureLimit);
   return {
     for (final record in records.values)
-      if (!record.isDeleted || record.updatedAt.isAfter(cutoff))
+      if (!record.isDeleted || (record.updatedAt.isAfter(cutoff) && !record.updatedAt.isAfter(ahead)))
         record.id: record,
   };
 }

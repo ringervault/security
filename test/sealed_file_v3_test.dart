@@ -74,6 +74,8 @@ void main() {
       (4 * 1024 * 1024, 3, 1), // 4 GiB
       (1024 * 1024, 3, 1), // 1 GiB: enough to end the app on a phone
       (512 * 1024, 3, 1),
+      (256 * 1024, 3, 1),
+      (32768, 7, 1),
       (32768, 11, 1),
       (32768, 20, 1),
       (32768, 0, 1),
@@ -85,7 +87,7 @@ void main() {
           reason: '$m KiB, $t passes, $p lanes');
     }
     // The most a file may ask for is still read.
-    expect(() => splitSealed(withHeader(256 * 1024, 10, 1)), returnsNormally);
+    expect(() => splitSealed(withHeader(128 * 1024, 6, 1)), returnsNormally);
   });
 
   test('a later version or another key function says it is newer', () {

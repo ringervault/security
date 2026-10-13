@@ -16,5 +16,5 @@ for (const c of fixture.cases) {
 
 test('a refusal says how strong it was', () => {
   assert.match(passphraseProblem('Password@12345'), /about 13 bits/);
-  assert.match(describeBits(estimateBits('glacier mosaic tundra velvet')), /^Very strong/);
+  assert.match(describeBits(estimateBits('glacier mosaic tundra velvet')), /^Strong/);
 });

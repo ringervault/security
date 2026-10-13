@@ -60,3 +60,10 @@ No npm dependencies. One vendored library:
 | Library | Version | Used for |
 |---|---|---|
 | hash-wasm (Argon2id only), MIT | 4.12.0 | Argon2id, in `extension/src/vendor/`, checked by SHA-256 in a test |
+
+## Data
+
+| What | Where | Licence |
+|---|---|---|
+| EFF Large Wordlist for Passphrases (7,776 words), by the Electronic Frontier Foundation, https://www.eff.org/dice | `tool/eff_large_wordlist.txt`, generated into `lib/utils/eff_words.g.dart` and `extension/src/vault/eff_words.js` (SHA-256 checked by `tool/gen_eff_words.py`) | CC BY 3.0 US |
+

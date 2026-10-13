@@ -50,7 +50,20 @@ export function planSave(entries, { url, username, password }) {
   if (account.entry.password === password) {
     return { action: SaveAction.none, entryId: account.entry.id, title: account.entry.title };
   }
+  // A page over plain http could have been rewritten on the way, password
+  // box and all: nothing typed there replaces a saved password.
+  if (!isHttps(url)) {
+    return { action: SaveAction.none, entryId: account.entry.id, title: account.entry.title };
+  }
   return { action: SaveAction.update, entryId: account.entry.id, title: account.entry.title };
+}
+
+function isHttps(url) {
+  try {
+    return new URL(url).protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 /**

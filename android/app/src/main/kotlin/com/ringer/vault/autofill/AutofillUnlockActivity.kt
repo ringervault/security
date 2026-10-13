@@ -312,7 +312,11 @@ class AutofillUnlockActivity : FlutterFragmentActivity() {
             val pkg = intent.getStringExtra(EXTRA_PACKAGE)
             val cert = intent.getStringExtra(EXTRA_CERTIFICATE)
             val verified = intent.getBooleanExtra(EXTRA_VERIFIED_BROWSER, false)
-            if (pkg != null && cert != null) {
+            // A browser that is not verified has no address worth believing,
+            // so nothing is kept for it: "no address" would match any page
+            // it shows. No fill reaches one today; this keeps it that way.
+            val unverifiedBrowser = intent.getBooleanExtra(EXTRA_KNOWN_BROWSER, false) && !verified
+            if (pkg != null && cert != null && !unverifiedBrowser) {
                 NextStep.remember(
                     pkg, cert,
                     if (verified) intent.getStringExtra(EXTRA_WEB_DOMAIN) else null,

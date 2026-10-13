@@ -13,6 +13,7 @@ import 'package:ringer_vault/services/security_guard.dart';
 import 'package:ringer_vault/services/vault_cipher.dart';
 import 'package:ringer_vault/services/vault_container.dart';
 import 'package:ringer_vault/services/vault_lock.dart';
+import 'package:ringer_vault/utils/secret_text.dart';
 import 'package:ringer_vault/utils/sealed_file.dart';
 
 /// The open vault, held in memory and written whole to the container.
@@ -156,6 +157,10 @@ class StorageService {
   /// The open vault's slot in the container, or null with none open.
   int? get openSlot => _open?.slot;
 
+  /// How many times the open vault has been written, for tests.
+  @visibleForTesting
+  int? get debugOpenCount => _open?.count;
+
   /// The folder the vault lives in, once [init] has run.
   String? get directoryPath => _dir;
 
@@ -265,6 +270,14 @@ class StorageService {
       final vault = _OpenVault.fromJson(json, slot: slot, keys: keys);
       // An older copy of the file, put back.
       if (vault.count < (written ?? 0)) throw VaultTamperedError();
+      // A vault written more than once has had its count recorded since its
+      // first write: the count goes into secure storage straight after the
+      // file, so a crash between the two leaves it one behind, never gone.
+      // Gone or unreadable now, it was removed, which is what putting back
+      // an older copy unnoticed would need. A keystore that lost its keys
+      // would have lost this vault's sealed key too, so refusing here locks
+      // nobody out of a vault they could otherwise have opened.
+      if (written == null && vault.count > 1) throw VaultTamperedError();
       // Left over from a move interrupted after its commit.
       await _deleteOldFiles(isDecoy: isDecoy);
       return vault;
@@ -637,20 +650,36 @@ class StorageService {
   /// change therefore always outranks it, whatever the clocks say. Only two
   /// edits made at the same time on devices that had not synced in between
   /// are still decided by the clocks alone.
-  DateTime nextStamp() {
+  ///
+  /// A stamp more than [maxClockLead] ahead of this phone's clock is ignored,
+  /// except on the entry being changed itself: one entry stamped far in the
+  /// future by a device with a wrong clock would otherwise drag every later
+  /// edit, on every device, that far forward. The edit still outranks the
+  /// version it replaces, whatever that version says.
+  DateTime nextStamp({Set<String> outrank = const {}}) {
     final now = DateTime.now().toUtc();
+    final limit = now.add(maxClockLead);
     DateTime? known;
-    for (final e in _open?.entries.values ?? const <VaultEntry>[]) {
-      if (known == null || e.updatedAt.isAfter(known)) known = e.updatedAt.toUtc();
+    void consider(String id, DateTime at) {
+      final t = at.toUtc();
+      if (t.isAfter(limit) && !outrank.contains(id)) return;
+      if (known == null || t.isAfter(known!)) known = t;
     }
-    for (final at in deletions.values) {
-      if (known == null || at.isAfter(known)) known = at;
+
+    for (final e in _open?.entries.values ?? const <VaultEntry>[]) {
+      consider(e.id, e.updatedAt);
+    }
+    for (final MapEntry(key: id, value: at) in deletions.entries) {
+      consider(id, at);
     }
     // Strictly after anything already here, even something stamped this
     // very millisecond.
-    if (known == null || known.isBefore(now)) return now;
-    return known.add(const Duration(milliseconds: 1));
+    if (known == null || known!.isBefore(now)) return now;
+    return known!.add(const Duration(milliseconds: 1));
   }
+
+  /// How far ahead of this phone's clock another device's stamp is believed.
+  static const Duration maxClockLead = Duration(days: 1);
 
   Future<void> addEntry(VaultEntry entry) async {
     OfflineGuard.ensureOffline(); // Security Check
@@ -673,7 +702,7 @@ class StorageService {
 
   Future<void> updateEntry(VaultEntry entry) async {
     OfflineGuard.ensureOffline(); // Security Check
-    entry.updatedAt = nextStamp();
+    entry.updatedAt = nextStamp(outrank: {entry.id});
     // A changed password: the one it replaces goes into the history.
     final before = _require.entries[entry.id];
     if (before != null && before.password.isNotEmpty && before.password != entry.password) {
@@ -690,7 +719,7 @@ class StorageService {
 
   Future<void> deleteEntry(String id) async {
     OfflineGuard.ensureOffline(); // Security Check
-    final at = nextStamp();
+    final at = nextStamp(outrank: {id});
     final open = _require;
     open.entries.remove(id);
     if (!_isDecoyMode) open.deleted[id] = at;
@@ -700,7 +729,7 @@ class StorageService {
   Future<void> deleteAllEntries() async {
     OfflineGuard.ensureOffline(); // Security Check
     final open = _require;
-    final at = nextStamp();
+    final at = nextStamp(outrank: open.entries.keys.toSet());
     if (!_isDecoyMode) {
       for (final id in open.entries.keys) {
         open.deleted[id] = at;
@@ -840,14 +869,25 @@ class StorageService {
   /// on Android the app's Dart code shares the thread that handles touches,
   /// and a few seconds of key derivation there gets the app reported as not
   /// responding.
-  Future<String> encryptData(List<int> plainBytes, String password) =>
-      compute(_encryptBackup, (plainBytes, password));
+  Future<String> encryptData(List<int> plainBytes, String password) async =>
+      compute(_encryptBackup, (plainBytes, await SecretText.nfc(password)));
 
   /// Reverses [encryptData]. Throws when the passphrase is wrong or the bytes
   /// were altered; AES-GCM makes the two indistinguishable on purpose. Runs
   /// on a background isolate, like [encryptData].
-  Future<List<int>> decryptDataV2(List<int> bytes, String password) =>
-      compute(_decryptBackup, (bytes, password));
+  Future<List<int>> decryptDataV2(List<int> bytes, String password) async {
+    // The password in one Unicode form first, then as typed
+    // (lib/utils/secret_text.dart).
+    final forms = await SecretText.forms(password);
+    for (final form in forms.take(forms.length - 1)) {
+      try {
+        return await compute(_decryptBackup, (bytes, form));
+      } catch (_) {
+        // Not this form; the last one's error is the one reported.
+      }
+    }
+    return compute(_decryptBackup, (bytes, forms.last));
+  }
 
   // A sealed file (lib/utils/sealed_file.dart, docs/FORMATS.md): AES-GCM
   // under Argon2id of the backup password (version 3), PBKDF2 on the web.

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:ringer_vault/utils/common_words.g.dart';
+import 'package:ringer_vault/utils/eff_words.g.dart';
 import 'package:ringer_vault/utils/unlock_secret.dart';
 
 /// How many guesses a passphrase would take, in bits, counted the way an
@@ -16,8 +17,11 @@ import 'package:ringer_vault/utils/unlock_secret.dart';
 /// or a year costs a few bits; anything left over costs per character.
 /// "Password@12345" comes to about 13 bits, not the 85 its length suggests.
 ///
+/// A word from the passphrase word list (the EFF list the generator draws
+/// from) costs log2 of the list's size, about 12.9 bits, whatever its length.
+///
 /// Still an estimate, and generous where it cannot see a pattern: it only
-/// knows the words in its list. extension/src/vault/passphrase.js is the same,
+/// knows the words in its lists. extension/src/vault/passphrase.js is the same,
 /// and test/fixtures/passphrase_cases.json holds cases both must agree on.
 double estimateBits(String value) {
   final lower = value.toLowerCase();
@@ -69,6 +73,10 @@ const List<String> _keyboardRows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm', '12345
 
 double _log2(num x) => log(x) / ln2;
 
+final Set<String> _listWords = effWords.toSet();
+final int _longestListWord = effWords.fold(0, (m, w) => max(m, w.length));
+final double _listWordBits = _log2(effWords.length);
+
 /// The piece starting at [i] that covers the most characters, and what it
 /// costs: (length, bits).
 (int, double) _bestPiece(String original, String lower, String norm, int i) {
@@ -84,6 +92,16 @@ double _log2(num x) => log(x) / ln2;
         (piece != piece.toLowerCase() ? 1 : 0) +
         (lower.substring(i, i + w.length) != w ? 1 : 0);
     options.add((w.length, cost));
+  }
+
+  // A word from the passphrase word list (eff_words.g.dart): what it costs
+  // someone guessing from that list, not what its letters would.
+  for (var len = min(_longestListWord, lower.length - i); len >= 3; len--) {
+    final w = lower.substring(i, i + len);
+    if (!_listWords.contains(w)) continue;
+    final piece = original.substring(i, i + len);
+    options.add((len, _listWordBits + (piece != w ? 1 : 0)));
+    break;
   }
 
   // A run of one character.

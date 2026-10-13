@@ -48,7 +48,7 @@ export const ARGON2_CURRENT = { memoryKib: 64 * 1024, passes: 3, lanes: 1 };
  * be authenticated, so this is what a stranger's file could demand. The
  * same limits as the app (lib/utils/sealed_file.dart).
  */
-const ARGON2_LIMITS = { minMemoryKib: 19 * 1024, maxMemoryKib: 256 * 1024, maxPasses: 10, maxLanes: 8 };
+const ARGON2_LIMITS = { minMemoryKib: 19 * 1024, maxMemoryKib: 128 * 1024, maxPasses: 6, maxLanes: 8 };
 
 export const ITERATIONS_V1 = 100000;
 export const ITERATIONS_CURRENT = 600000;
@@ -283,9 +283,26 @@ const sameParams = (a, b) => a.version === b.version && a.iterations === b.itera
  */
 export async function openSealed(base64Text, password) {
   const parts = split(base64Text);
-  const { key, pinBoxKey } = await deriveKeys(password, parts.params);
-  const parsed = await decryptParts(parts, key);
-  return { parsed, key, params: parts.params, pinBoxKey };
+  // The passphrase in one Unicode form (NFC) first, then exactly as typed,
+  // so a file sealed either way, on any device, opens. The app does the
+  // same (lib/utils/secret_text.dart).
+  const forms = secretForms(password);
+  for (let i = 0; i < forms.length; i++) {
+    const { key, pinBoxKey } = await deriveKeys(forms[i], parts.params);
+    try {
+      const parsed = await decryptParts(parts, key);
+      return { parsed, key, params: parts.params, pinBoxKey };
+    } catch (e) {
+      if (i === forms.length - 1 || !(e instanceof BackupError)) throw e;
+    }
+  }
+  throw new BackupError('Wrong password, or the file was changed.');
+}
+
+/** [secret] in NFC, then as typed when that differs. */
+export function secretForms(secret) {
+  const composed = String(secret).normalize('NFC');
+  return composed === secret ? [secret] : [composed, secret];
 }
 
 /**
@@ -296,7 +313,8 @@ export async function newKey(password) {
   const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
   const { memoryKib, passes, lanes } = ARGON2_CURRENT;
   const params = { version: 3, iterations: passes, memoryKib, lanes, salt };
-  return { key: await deriveKey(password, params), params };
+  // New keys from the composed form (see secretForms).
+  return { key: await deriveKey(String(password).normalize('NFC'), params), params };
 }
 
 /**

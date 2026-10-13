@@ -9,6 +9,7 @@
 // other. test/fixtures/passphrase_cases.json holds cases both must agree on.
 
 import { commonWords } from './common_words.js';
+import { effWords } from './eff_words.js';
 
 export const MIN_LENGTH = 12;
 export const MAX_LENGTH = 128;
@@ -70,6 +71,12 @@ const LOOK_ALIKES = {
 const KEYBOARD_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm', '1234567890'];
 const log2 = Math.log2;
 
+// The passphrase word list (the EFF list the app's generator draws from): a
+// word from it costs log2 of the list's size, whatever its length.
+const LIST_WORDS = new Set(effWords);
+const LONGEST_LIST_WORD = effWords.reduce((m, w) => Math.max(m, w.length), 0);
+const LIST_WORD_BITS = log2(effWords.length);
+
 function bestPiece(original, lower, norm, i) {
   const options = [];
 
@@ -81,6 +88,14 @@ function bestPiece(original, lower, norm, i) {
       + (lower.slice(i, i + w.length) !== w ? 1 : 0);
     options.push([w.length, cost]);
   });
+
+  for (let len = Math.min(LONGEST_LIST_WORD, lower.length - i); len >= 3; len--) {
+    const w = lower.slice(i, i + len);
+    if (!LIST_WORDS.has(w)) continue;
+    const piece = original.slice(i, i + len);
+    options.push([len, LIST_WORD_BITS + (piece !== w ? 1 : 0)]);
+    break;
+  }
 
   let r = i + 1;
   while (r < lower.length && lower[r] === lower[i]) r++;

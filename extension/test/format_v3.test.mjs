@@ -50,7 +50,7 @@ test('a changed header is caught', async () => {
 });
 
 test('settings too weak or too costly are refused before any work', () => {
-  for (const [m, t, p] of [[1024, 3, 1], [4 * 1024 * 1024, 3, 1], [1024 * 1024, 3, 1], [512 * 1024, 3, 1], [32768, 11, 1], [32768, 20, 1], [32768, 0, 1], [32768, 1000, 1], [32768, 3, 0], [32768, 3, 200]]) {
+  for (const [m, t, p] of [[1024, 3, 1], [4 * 1024 * 1024, 3, 1], [1024 * 1024, 3, 1], [512 * 1024, 3, 1], [256 * 1024, 3, 1], [32768, 7, 1], [32768, 11, 1], [32768, 20, 1], [32768, 0, 1], [32768, 1000, 1], [32768, 3, 0], [32768, 3, 200]]) {
     const b = Buffer.from(vector.sealedByExtension, 'base64');
     b.writeUInt32BE(m, 6);
     b.writeUInt32BE(t, 10);
@@ -59,8 +59,8 @@ test('settings too weak or too costly are refused before any work', () => {
   }
   // The most a file may ask for is still read.
   const most = Buffer.from(vector.sealedByExtension, 'base64');
-  most.writeUInt32BE(256 * 1024, 6);
-  most.writeUInt32BE(10, 10);
+  most.writeUInt32BE(128 * 1024, 6);
+  most.writeUInt32BE(6, 10);
   most[14] = 1;
   assert.doesNotThrow(() => paramsOf(most.toString('base64')));
 });

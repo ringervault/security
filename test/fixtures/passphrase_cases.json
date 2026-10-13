@@ -1,5 +1,5 @@
 {
-  "_about": "Passphrases and how many bits estimateBits gives them (to one decimal), with whether a sync passphrase is refused. The app (lib/utils/passphrase_strength.dart) and the extension (extension/src/vault/passphrase.js) must both give these answers.",
+  "_about": "Passphrases and how many bits estimateBits gives them (to one decimal), with whether a sync passphrase is refused. The app (lib/utils/passphrase_strength.dart) and the extension (extension/src/vault/passphrase.js) must both give these answers. Words from the EFF passphrase list (tool/eff_large_wordlist.txt) count about 12.9 bits each.",
   "cases": [
     {
       "passphrase": "Password@12345",
@@ -18,7 +18,7 @@
     },
     {
       "passphrase": "glacier mosaic tundra velvet",
-      "bits": 106,
+      "bits": 68.8,
       "refused": false
     },
     {
@@ -53,7 +53,7 @@
     },
     {
       "passphrase": "purple-elephant-quietly-dances",
-      "bits": 98.2,
+      "bits": 65,
       "refused": false
     },
     {
@@ -73,7 +73,7 @@
     },
     {
       "passphrase": "Brisk lantern 47 orbit",
-      "bits": 81.3,
+      "bits": 63.2,
       "refused": false
     }
   ]

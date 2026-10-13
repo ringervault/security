@@ -40,10 +40,10 @@ its developer.
   it is unlocked. Ringer Vault protects data at rest and in transit.
 - **Someone who has the real PIN** has the real vault.
 - **Rollback protection rests on the write counters** in Android's secure
-  storage. A missing or unreadable counter reads as none, so someone able
-  to change the app's private storage (in practice, root) could remove it
-  together with putting back an older file. Treating a missing counter as
-  tampering would lock people out after a keystore fault, so it is not.
+  storage. A missing counter is now refused for any vault written more than
+  once, but someone able to rewrite both the app's private storage and its
+  keystore-protected records together (in practice, root on an unlocked
+  device) is beyond what any app can stop.
 - **Saving needs no unlock:** someone holding the phone unlocked can add
   logins, or replace a saved password (the old one stays in its history).
   Look-alikes of the vault's own sites are named at the next unlock, not on

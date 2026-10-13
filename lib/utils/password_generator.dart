@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:ringer_vault/utils/eff_words.g.dart';
+
 /// Generates strong passwords.
 ///
 /// The vault scored password strength but had no way to produce a strong one,
@@ -73,26 +75,10 @@ class PasswordGenerator {
     return chars.join();
   }
 
-  /// Words for passphrase mode.
-  ///
-  /// Short, unambiguous, and easy to read back off a screen. Kept deliberately
-  /// small and offline: a real diceware list would be a bundled asset, and
-  /// this app ships no assets.
-  static const List<String> _words = [
-    'anchor', 'amber', 'apple', 'arrow', 'atlas', 'basin', 'beacon', 'birch',
-    'bison', 'blaze', 'bloom', 'bridge', 'cabin', 'canyon', 'cedar', 'cinder',
-    'cobalt', 'comet', 'coral', 'cortex', 'crane', 'crest', 'delta', 'dune',
-    'ember', 'falcon', 'fern', 'flint', 'forge', 'fossil', 'garnet', 'glacier',
-    'granite', 'harbor', 'hazel', 'heron', 'indigo', 'ivory', 'jasper',
-    'jungle', 'kernel', 'lantern', 'ledger', 'lichen', 'lunar', 'maple',
-    'marble', 'meadow', 'mesa', 'meteor', 'monsoon', 'nectar', 'nimbus',
-    'oasis', 'onyx', 'opal', 'orchid', 'otter', 'pepper', 'pewter', 'pilot',
-    'pine', 'plateau', 'prism', 'quartz', 'quiver', 'raven', 'reef', 'ridge',
-    'river', 'rowan', 'saffron', 'sage', 'sable', 'shale', 'silo', 'slate',
-    'solar', 'spruce', 'summit', 'tangent', 'thicket', 'thorn', 'tidal',
-    'timber', 'topaz', 'tundra', 'umber', 'valley', 'velvet', 'vertex',
-    'walnut', 'willow', 'winter', 'zenith', 'zephyr',
-  ];
+  /// Words for passphrase mode: the EFF Large Wordlist (7,776 words, about
+  /// 12.9 bits each, chosen to be easy to read and remember). Five of them
+  /// and a number come to about 71 bits.
+  static const List<String> _words = effWords;
 
   static const int minWords = 3;
   static const int maxWords = 10;

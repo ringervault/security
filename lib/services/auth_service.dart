@@ -284,6 +284,14 @@ class AuthService {
         return now.wall.add(Duration(milliseconds: lengthMs));
       }
       final left = elapsedEnd - now.elapsedMs!;
+      if (left > lengthMs) {
+        // More left than the lockout's own length: the time since boot went
+        // backwards, a restart on a phone that does not say which boot it
+        // is. Run it again in full, as for a known restart, not for the
+        // whole of the earlier uptime.
+        await _writeLockout(Duration(milliseconds: lengthMs), now);
+        return now.wall.add(Duration(milliseconds: lengthMs));
+      }
       if (left > 0) return now.wall.add(Duration(milliseconds: left));
     } else {
       final end = DateTime.tryParse('${record['until']}');
@@ -592,10 +600,18 @@ class AuthService {
       real = await _keys.unlockWithPin(pin: pin, isDecoy: false);
       decoy = await _keys.unlockWithPin(pin: pin, isDecoy: true);
     } else {
-      (real, decoy) = await (
-        _keys.unlockWithPin(pin: pin, isDecoy: false),
-        _keys.unlockWithPin(pin: pin, isDecoy: true),
-      ).wait;
+      try {
+        (real, decoy) = await (
+          _keys.unlockWithPin(pin: pin, isDecoy: false),
+          _keys.unlockWithPin(pin: pin, isDecoy: true),
+        ).wait;
+      } on ParallelWaitError<(Uint8List?, Uint8List?), (AsyncError?, AsyncError?)> catch (e) {
+        // The error itself, as the one-after-the-other path would give it,
+        // so callers can tell "newer version" from anything else.
+        final (a, b) = e.errors;
+        final first = (a ?? b)!;
+        Error.throwWithStackTrace(first.error, first.stackTrace);
+      }
     }
     for (final (masterKey, isDecoy) in [(real, false), (decoy, true)]) {
       if (masterKey == null) continue;
