@@ -1,0 +1,174 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+
+    <!--
+      Which other apps Ringer Vault can see (package visibility, Android 11
+      and later), declared in <queries> at the end of this file rather than
+      with QUERY_ALL_PACKAGES.
+
+      The security model identifies the app asking for a login by its signing
+      certificate, not the package name it claims, and reading that needs
+      the app to be visible. Without it the system declines every request:
+      the service finds it cannot see the caller and offers nothing, which
+      is how this first failed on a real device. The queries make visible
+      what autofill needs and nothing more: apps with a launcher icon (the
+      apps people sign in to), browsers (any app that opens web links, for
+      the "a browser is never treated as an app" rule), and Chrome by name.
+      The list is used only to identify the caller of a request and is never
+      stored or synced.
+    -->
+
+    <!--
+      Used for Google Drive sync and nothing else.
+
+      This is a deliberate change of guarantee. Until sync existed, the app
+      declared no INTERNET permission, which made "it cannot reach a network"
+      something anyone could check from the APK. Android permissions are fixed
+      at install, so there is no way to hold this only for users who turn sync
+      on. Strict Offline Mode is now a promise kept by the app's own code
+      rather than by the operating system.
+
+      What still holds: sync is off until the user turns it on, it refuses to
+      run while Strict Offline Mode is enabled, and what leaves the device is
+      encrypted with a passphrase Google never sees. Besides sync, the app goes
+      online only to read a website's list of its own apps before a first
+      autofill into one of them, and, if the user turns it on, to ask how new
+      a website is. Strict Offline Mode stops all of it.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!--
+      safe_device declares these for its mock-location check, which this app
+      does not use: it only asks whether the device is rooted. A password
+      vault that asks for location is a vault nobody should believe, and the
+      permission shows on the store listing whether it is exercised or not.
+
+      ACCESS_NETWORK_STATE is merged in by connectivity_plus and is kept: it
+      is what Strict Offline Mode reads, and it grants no network access.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        tools:node="remove"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"
+        tools:node="remove"/>
+    <application
+        android:label="Ringer Vault"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
+        <!--
+          Autofill. The service is started by the system, never by us, and is
+          guarded by BIND_AUTOFILL_SERVICE so only the system can bind to it.
+          It holds no key and can read nothing: its whole job is to offer an
+          unlock row and hand over to the activity below.
+        -->
+        <service
+            android:name=".autofill.VaultAutofillService"
+            android:exported="true"
+            android:label="@string/autofill_service_label"
+            android:permission="android.permission.BIND_AUTOFILL_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.autofill.AutofillService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.autofill"
+                android:resource="@xml/autofill_service"/>
+        </service>
+
+        <!--
+          Credential Manager (Android 14 and later): passwords in the system's
+          "Use saved password or passkey?" sheet. Bound by the system only
+          (BIND_CREDENTIAL_PROVIDER_SERVICE). Like the autofill service it
+          holds no key: it offers an unlock action and hands over to the
+          activity below. Never instantiated before Android 14, where no
+          such service exists. docs/CREDENTIAL_PROVIDER.md.
+        -->
+        <service
+            android:name=".credentials.VaultCredentialService"
+            android:exported="true"
+            android:label="@string/autofill_service_label"
+            android:icon="@mipmap/ic_launcher"
+            android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
+            tools:targetApi="34">
+            <intent-filter>
+                <action android:name="android.service.credentials.CredentialProviderService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.credentials.provider"
+                android:resource="@xml/credential_provider"/>
+        </service>
+
+        <!-- Hands a login chosen for the sheet back to it. No screen. -->
+        <activity
+            android:name=".credentials.CredentialPickActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            tools:targetApi="34"/>
+
+        <activity
+            android:name=".autofill.AutofillUnlockActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/AutofillSheetTheme"/>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Apps people sign in to: anything with a launcher icon. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
+        <!-- Browsers: anything that opens ordinary web links. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https"/>
+        </intent>
+        <!-- Chrome, whose settings and certificate are checked by name. -->
+        <package android:name="com.android.chrome"/>
+        <package android:name="com.chrome.beta"/>
+    </queries>
+</manifest>

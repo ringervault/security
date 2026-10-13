@@ -1,0 +1,19 @@
+# Build output and local tool state
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+android/local.properties
+android/app/src/main/java/
+android/.gradle/
+node_modules/
+.DS_Store
+.idea/
+.vscode/
+
+# Never published: signing keys and private configuration
+*.jks
+*.keystore
+key.properties
+config/

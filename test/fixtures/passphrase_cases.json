@@ -1,0 +1,80 @@
+{
+  "_about": "Passphrases and how many bits estimateBits gives them (to one decimal), with whether a sync passphrase is refused. The app (lib/utils/passphrase_strength.dart) and the extension (extension/src/vault/passphrase.js) must both give these answers.",
+  "cases": [
+    {
+      "passphrase": "Password@12345",
+      "bits": 12.6,
+      "refused": true
+    },
+    {
+      "passphrase": "P@ssw0rd!2024x",
+      "bits": 19,
+      "refused": true
+    },
+    {
+      "passphrase": "correct horse battery staple",
+      "bits": 41.4,
+      "refused": true
+    },
+    {
+      "passphrase": "glacier mosaic tundra velvet",
+      "bits": 106,
+      "refused": false
+    },
+    {
+      "passphrase": "Tr0ub4dor&3xyz",
+      "bits": 49.3,
+      "refused": true
+    },
+    {
+      "passphrase": "iloveyou2024!!",
+      "bits": 19.6,
+      "refused": true
+    },
+    {
+      "passphrase": "x7#Kq9!mZ2pL",
+      "bits": 50.1,
+      "refused": false
+    },
+    {
+      "passphrase": "qwertyuiop1234",
+      "bits": 12.6,
+      "refused": true
+    },
+    {
+      "passphrase": "summer2024summer",
+      "bits": 19.3,
+      "refused": true
+    },
+    {
+      "passphrase": "MyDogRex!1987abc",
+      "bits": 47.9,
+      "refused": true
+    },
+    {
+      "passphrase": "purple-elephant-quietly-dances",
+      "bits": 98.2,
+      "refused": false
+    },
+    {
+      "passphrase": "aaaaaaaabbbbbbbb",
+      "bits": 14,
+      "refused": true
+    },
+    {
+      "passphrase": "abcdefghijklmnop",
+      "bits": 8,
+      "refused": true
+    },
+    {
+      "passphrase": "RingerVault2026!",
+      "bits": 20.2,
+      "refused": true
+    },
+    {
+      "passphrase": "Brisk lantern 47 orbit",
+      "bits": 81.3,
+      "refused": false
+    }
+  ]
+}

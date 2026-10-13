@@ -1,0 +1,12 @@
+{
+  "_about": "What a device does with a Drive copy of generation `found` when the highest it has accepted is `seen`: refuse it, or take it and write the next copy as generation `next`. The app (generationStep in lib/sync/sync_engine.dart) and the extension (extension/src/vault/rollback.js) must both give these answers.",
+  "cases": [
+    { "found": 0, "seen": 0, "acceptOlder": false, "refuse": false, "next": 1, "why": "a first sync, or a file from before the counter" },
+    { "found": 5, "seen": 0, "acceptOlder": false, "refuse": false, "next": 6, "why": "a device that never synced takes whatever is there" },
+    { "found": 5, "seen": 5, "acceptOlder": false, "refuse": false, "next": 6, "why": "the copy this device last saw" },
+    { "found": 9, "seen": 5, "acceptOlder": false, "refuse": false, "next": 10, "why": "another device wrote since" },
+    { "found": 4, "seen": 5, "acceptOlder": false, "refuse": true, "next": null, "why": "one write older: put back" },
+    { "found": 0, "seen": 5, "acceptOlder": false, "refuse": true, "next": null, "why": "from before the counter, after it existed" },
+    { "found": 2, "seen": 7, "acceptOlder": true, "refuse": false, "next": 8, "why": "taken on purpose: written above everything seen, so no device refuses it" }
+  ]
+}

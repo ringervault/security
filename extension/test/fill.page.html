@@ -1,0 +1,42 @@
+<!doctype html><meta charset="utf-8"><title>fill test</title>
+<!-- Open in a browser from a local web server (fill.js runs in real pages, so it is checked in one): window.__results shows each case. -->
+<body>
+<div id="cases"></div>
+<script type="module">
+import { fillCredential } from '../src/fill.js';
+const area = document.getElementById('cases');
+const results = {};
+function page(html) { area.innerHTML = html; }
+const val = (id) => document.getElementById(id)?.value ?? null;
+
+// 1. A hidden trap before the real form: zero opacity parent, 1px box, off-screen box.
+page(`
+  <div style="opacity:0"><input type="password" id="trap1"></div>
+  <input type="password" id="trap2" style="width:1px;height:1px">
+  <input type="password" id="trap3" style="position:absolute;left:-9999px">
+  <form id="real"><input type="email" id="u"><input type="password" id="p"><button>Sign in</button></form>`);
+let r = fillCredential({ username: 'ada@x.example', password: 'pw-1' });
+results.hiddenTraps = { filled: r.filled, real: [val('u'), val('p')], traps: [val('trap1'), val('trap2'), val('trap3')] };
+
+// 2. Two forms: the one the person is in is filled, the other is not.
+page(`
+  <form id="a"><input type="email" id="ua"><input type="password" id="pa"></form>
+  <form id="b"><input type="email" id="ub"><input type="password" id="pb"></form>`);
+document.getElementById('ub').focus();
+r = fillCredential({ username: 'ada@x.example', password: 'pw-2' });
+results.focusedForm = { a: [val('ua'), val('pa')], b: [val('ub'), val('pb')] };
+
+// 3. Username in another form than the password is not used.
+page(`
+  <form><input type="email" id="newsletter" name="email"></form>
+  <form><input type="text" id="login" name="username"><input type="password" id="pw"></form>`);
+r = fillCredential({ username: 'ada', password: 'pw-3' });
+results.otherForm = { newsletter: val('newsletter'), login: val('login'), pw: val('pw') };
+
+// 4. Username-only step still works.
+page(`<form><input type="email" id="only" autocomplete="username"></form>`);
+r = fillCredential({ username: 'ada@x.example', password: 'pw-4' });
+results.usernameOnly = { only: val('only'), filled: r.filled };
+
+window.__results = results;
+</script>

@@ -1,0 +1,11 @@
+{
+  "_about": "Argon2id as the app (Dart, package:cryptography) and the extension (hash-wasm) must both compute it for sealed files of version 3, and a file each side sealed that the other must open. Password is UTF-8.",
+  "password": "correct horse battery staple, ünïcödé",
+  "saltHex": "000102030405060708090a0b0c0d0e0f",
+  "memoryKib": 32768,
+  "passes": 3,
+  "lanes": 1,
+  "keyHex": "00eff6fff574b2cc29652fe78d51703cbfcd48b925dec6f6478b935dd8ecb1f0",
+  "sealedByExtension": "UlZMVAMCAACAAAAAAAMBbNQum1lHnxlHKsU/nQjPRb3ihn0k1srHXwaFzKmj+GsXUX8zamCP/Eaz0fvjwckPEeahIwTDeOiytIRyJr/uzV1rK3dmSTM2y+U5FT7oA3zU6bQh9l4Z4tCJDBVqR1quT209eFVHPHxkFEU5YrY9BA==",
+  "sealedByApp": "UlZMVAMCAACAAAAAAAMB8OHSw7Sllod4aVpLPC0eD/M+JLvoivBKaH+7H0+JcJfqu29i9A/a0x9xjCty0Drb9rICQGLyj7gYmgJbJdmEYlaTTM335s87wjmrMpJMC0UmWRwDar+JFS7QnMKfhZglSU+OZ0ogfg8ElM4m2Vz6Fw=="
+}

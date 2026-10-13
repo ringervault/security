@@ -1,0 +1,49 @@
+Ringer Vault Security Review Licence, version 1.0
+
+Copyright (c) 2026 Ringer Vault. All rights reserved, except as set out
+below.
+
+This repository is published so that anyone can check how Ringer Vault
+protects the data in it. It is source-available for review. It is not open
+source.
+
+1. What you may do, free of charge
+
+   a. Read, download and keep copies of this repository.
+   b. Build it and run its tests on your own computers and devices.
+   c. Change it privately to investigate, test or demonstrate a security
+      issue.
+   d. Quote reasonable excerpts in security reviews, research, articles,
+      talks and vulnerability reports, with a link back to this repository.
+
+2. What you may not do without written permission
+
+   a. Distribute this code, or a changed version of it, other than excerpts
+      under 1(d).
+   b. Use any part of it in another product or service, paid or free.
+   c. Publish an app, extension or service built from it.
+   d. Use the Ringer Vault name or logo for anything that is not Ringer
+      Vault.
+
+3. Reports and contributions
+
+   Security reports are welcome at ringervault@gmail.com. If you send a
+   change to the code, you allow the copyright holder to use it in Ringer
+   Vault, without payment, worldwide and for all time.
+
+4. Third-party code
+
+   Third-party code in this repository keeps its own licence, which takes
+   precedence for that code. This includes hash-wasm (MIT,
+   extension/src/vendor/hash-wasm-LICENSE) and the Public Suffix List data
+   (Mozilla Public License 2.0, noted in the files that hold it).
+
+5. No warranty
+
+   This repository is provided "as is", without warranty of any kind. The
+   copyright holder is not liable for any claim, damage or other liability
+   arising from it or from its use.
+
+6. Ending
+
+   If you break these terms, your permission under section 1 ends.
