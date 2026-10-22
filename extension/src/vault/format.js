@@ -456,6 +456,8 @@ function normaliseEntry(raw) {
     password: str(raw.password),
     category: str(raw.category),
     notes: str(raw.notes),
+    // When it was last changed, to tell two entries of one account apart.
+    updatedAt: str(raw.updatedAt),
     autofillTargets: Array.isArray(raw.autofillTargets)
       ? raw.autofillTargets.filter((t) => typeof t === 'string')
       : [],
