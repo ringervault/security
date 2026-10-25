@@ -21,10 +21,19 @@ access to what is already there.
 
 ## Google Play
 
-- Product `ringervault_premium`, a subscription with a monthly base plan at
-  ₹99 and an offer of 7 days free. Created in Play Console under Monetize
-  with Play, Products, Subscriptions (after the first build with the billing
-  library is uploaded).
+- Product `ringervault_premium` ("Ringer Vault Premium"), created in Play
+  Console on 26 October 2026 under Monetize with Play, Products,
+  Subscriptions. Base plan `monthly`: auto-renewing, ₹99 in India, other
+  regions converted by Play, 7-day grace period. Offer `free-trial-7d`:
+  7 days free, only for people who never had this subscription. The app
+  finds the trial by its free phase, not by these IDs.
+- License testing (Play Console, Manage account): the list "Ringer Vault
+  testers" buys without being charged.
+- Google's reviewers reach Premium through one-time Play promo codes (the
+  promotion "Google Play app review", 30 days free), named in the Sign in
+  details declaration. The codes are kept out of this repository. A code
+  redeemed in the Play Store reaches the app at its next start or return to
+  the front, when it asks Play what is active.
 - The app uses `in_app_purchase` (Google Play Billing). It asks Play what is
   active when it starts and whenever it comes to the front, but not in
   Strict Offline Mode. New purchases are acknowledged at once, as Play
