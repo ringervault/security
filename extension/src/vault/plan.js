@@ -22,10 +22,11 @@ export const BELIEVED_MS = 35 * 24 * 60 * 60 * 1000;
 
 /**
  * Google Play's public key for this app (Play Console, Monetization setup,
- * Licensing), base64 DER. Public by design; with none set, no subscription
- * can be verified and every vault is on the free plan.
+ * Licensing), base64 DER, copied 25 October 2026. Public by design: it can
+ * only check Google's signatures, never make one. With none set, no
+ * subscription could be verified and every vault would be on the free plan.
  */
-export const PLAY_LICENSE_KEY = '';
+export const PLAY_LICENSE_KEY = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1MkxpRz0nsa+TGlcKfCo6Sv5TBc7VZwLriHjAv/S2DvmdOI7KXVOPtbdgjr2WOxzV0q4//HESsok1NaJsBEtLT/q5u3c/DfzoNKZqBv93vTUuWHYJ0uzCS7aBc0JSNiKiZXWoQaH//moC+NZME7FzlwYUVeJnq9qwIhqaqzVrjk5cqPNk8Rt5TtfCyoOj2BU/oMz2+OOI6DVYYmJi/FqQBuMOoUe5Z7Swh7BikkmkjAD7q1tPuEiIw/z6uwh5CbukcPJZnqZ8vGrLsxu9BEBnk5I59pPBeRKHNcOYIakTJn4YPlEZkn9rXDJkE0tjcaLzQlk7ntMhudBlcHhU1qJewIDAQAB';
 
 /** Room for new logins in a vault holding [count]. */
 export function roomLeft(count, subscribed) {

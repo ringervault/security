@@ -48,8 +48,8 @@ The extension cannot ask Google Play. The phone writes Play's signed purchase
 record into the encrypted sync file (FORMATS.md, section 5), and the extension
 checks Google's RSA signature on it with the app's public licensing key
 (`PLAY_LICENSE_KEY` in `extension/src/vault/plan.js`, from Play Console,
-Monetization setup, Licensing). Until that key is set there, the extension
-treats every vault as free.
+Monetization setup, Licensing; set 25 October 2026). The key is public by
+design: it can check Google's signatures but never make one.
 
 Someone using only the extension (no Android phone) gets a free vault of 20
 in Chrome. Nothing is sold in Chrome; the subscription is bought in the app.
