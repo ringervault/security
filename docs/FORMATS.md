@@ -595,9 +595,29 @@ sealed file (section 4) as base64 text. The plaintext inside is UTF-8 JSON:
 | `writtenAt` | string | ISO 8601. App: its clock at upload, in UTC. Extension: the same stamp it gave the change (see `nextStamp`), or the time of creation. Informational only. |
 | `generation` | integer ≥ 0 | One more than the copy it replaced. Absent in version 1 files; read as 0. |
 | `records` | array | One per entry id, live or deleted |
+| `entitlement` | object, optional | Google Play's signed record of the subscription, as a phone last confirmed it (added 25 October 2026 inside version 2; older readers ignore it). See below. |
 
 `writtenBy` and `writtenAt` are parsed by the app but nothing decides
 anything by them.
+
+`entitlement`, when present (lib/subscription/entitlement.dart,
+extension/src/vault/plan.js):
+
+| Key | Type | Notes |
+|---|---|---|
+| `productId` | string | `"ringervault_premium"` |
+| `purchaseJson` | string | Google Play's purchase data, exactly as Play returned it (`originalJson`) |
+| `signature` | string | Google's signature on `purchaseJson`: RSASSA-PKCS1-v1_5 with SHA-1, base64, checked with the app's Play licensing public key |
+| `autoRenewing` | boolean | Whether Play said it renews |
+| `confirmedAt` | ISO 8601 string | When the phone last heard from Play that the subscription is active. Not signed by Google: written by the phone, inside the encryption |
+
+The extension counts the user as subscribed when the signature checks out,
+`purchaseJson` names package `ringervault.password.manager`, product
+`ringervault_premium` and `purchaseState` 0, and `confirmedAt` is less than 35
+days ago (with its own clock never allowed to run backward). A phone writes
+the record when it differs from the file's (another purchase, or a
+confirmation more than a day newer), even with no entry changed. A phone
+without a record keeps the file's as it is.
 
 A record:
 
@@ -646,7 +666,8 @@ writes `Date.prototype.toISOString()`, also UTC with `Z`.
 ### Writing
 
 - The app builds the object afresh from its merged records, and writes
-  exactly the six keys above. A deleted record is written as
+  the six keys above, plus `entitlement` when it has one or the file had
+  one. A deleted record is written as
   `{"id", "updatedAt", "deleted": true}` with no `entry`.
 - The extension spreads the parsed object (`{...parsed}`), replaces
   `writtenBy`, `writtenAt` and `records`, and then sets `version` to 2 and

@@ -21,7 +21,8 @@ It matches Android app **1.0.0** and Chrome extension **0.3.9**.
 | `lib/models/`, `lib/repository/` | The entry format, and the layer the screens use |
 | `android/` | The Android autofill service and the Credential Manager provider (Kotlin), with their unit tests. For reading: they need the rest of the app to build |
 | `extension/` | The Chrome extension's security modules (encryption, quick unlock, rollback, matching, look-alikes, saving rules), with their tests |
-| `docs/` | Architecture, threat model, byte-level formats, sync, the sign-in sheet design, dependencies |
+| `lib/subscription/` | The free plan's rule, and how long Google Play's word on a subscription is believed (the Play code itself is not included) |
+| `docs/` | Architecture, threat model, byte-level formats, sync, the sign-in sheet design, the subscription, dependencies |
 | `test/` | The Dart tests for all of the above, and shared test vectors |
 | `integration_test/` | The on-device check that every unlock takes the same time, whichever vault opens |
 
@@ -56,7 +57,7 @@ The unlock timing check needs a phone or emulator:
 flutter test integration_test/unlock_timing_test.dart -d <device>
 ```
 
-At the time of publishing: 601 Dart tests and 217 extension tests, all
+At the time of publishing: 601 Dart tests and 225 extension tests, all
 passing. `test/extension_interchange_test.dart` runs the extension's own
 code from Dart, so the two prove they read and write each other's files.
 
@@ -82,6 +83,7 @@ code from Dart, so the two prove they read and write each other's files.
 | A removed write-count record does not switch rollback protection off | `storage_service.dart` | `rollback_counter_test.dart` |
 | A key record from a newer version is reported as such, never guessed at | `vault_key_service.dart` | `kdf_unknown_test.dart` |
 | Accented passphrases make the same key on every device | `secret_text.dart`, `extension/src/vault/format.js` | `secret_text_test.dart`, `extension/test/unicode_secret.test.mjs` |
+| The extension counts a subscription only with Google Play's own signature on it, for this app and product; a subscription that ends never holds saved logins back | `lib/subscription/`, `extension/src/vault/plan.js` | `extension/test/plan.test.mjs` |
 | Tests never touch real data | `test/support/render_harness.dart` | `leak_audit_test.dart` |
 
 ## Review fixes
