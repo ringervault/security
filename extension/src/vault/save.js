@@ -13,7 +13,7 @@
 // than rebuilding it from the trimmed copy used for filling.
 
 import { candidatesFor } from './match.js';
-import { hostOf } from './host.js';
+import { hostOf, isSecurePage } from './host.js';
 import { SYNC_FORMAT, SYNC_VERSION } from './format.js';
 
 export const SaveAction = {
@@ -51,19 +51,12 @@ export function planSave(entries, { url, username, password }) {
     return { action: SaveAction.none, entryId: account.entry.id, title: account.entry.title };
   }
   // A page over plain http could have been rewritten on the way, password
-  // box and all: nothing typed there replaces a saved password.
-  if (!isHttps(url)) {
+  // box and all: nothing typed there replaces a saved password. This
+  // computer's own pages (localhost) never cross the network.
+  if (!isSecurePage(url)) {
     return { action: SaveAction.none, entryId: account.entry.id, title: account.entry.title };
   }
   return { action: SaveAction.update, entryId: account.entry.id, title: account.entry.title };
-}
-
-function isHttps(url) {
-  try {
-    return new URL(url).protocol === 'https:';
-  } catch {
-    return false;
-  }
 }
 
 /**
@@ -105,13 +98,8 @@ export function titleFor(url) {
  * somewhere secure.
  */
 export function siteTargetFor(url) {
-  let scheme = null;
-  try {
-    scheme = new URL(url).protocol.replace(':', '');
-  } catch {
-    return null;
-  }
-  if (scheme !== 'https') return null;
+  // localhost over http is this computer's own page, and is linked too.
+  if (!isSecurePage(url)) return null;
   const host = hostOf(url);
   return host.isUsable ? `site:${host.host}` : null;
 }

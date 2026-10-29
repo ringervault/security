@@ -290,6 +290,19 @@ void main() {
       expect(offer?.pendingTarget?.encode(), 'site:accounts.google.com');
     });
 
+    test('localhost over http is this device, and is offered too', () {
+      final offer = offerUnlinked(const AutofillRequest(
+        packageName: 'com.android.chrome',
+        certificateSha256: realCert,
+        claimedWebDomain: 'localhost',
+        fromVerifiedBrowser: true,
+        webScheme: 'http',
+        knownBrowser: true,
+      ));
+      expect(offer?.reason, MatchReason.firstUseOfSite);
+      expect(offer?.pendingTarget?.encode(), 'site:localhost');
+    });
+
     test('an app offers to remember itself and its signature', () {
       final offer = offerUnlinked(const AutofillRequest(
         packageName: 'com.example.bank',

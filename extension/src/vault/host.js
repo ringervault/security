@@ -69,6 +69,9 @@ export function registrableDomain(rawHost) {
   if (LOOKS_LIKE_IP.test(host) || host.includes(':')) {
     return rejected(HostRejection.ipAddress);
   }
+  // This computer itself: a site of its own, for logins to things being
+  // built or run here. Nothing on the network can answer for it.
+  if (host === 'localhost') return ok(host, host);
 
   const labels = host.split('.');
   if (labels.length < 2 || labels.some((l) => l === '')) {
@@ -131,8 +134,28 @@ export function siteTier(savedHosts, pageHost, scheme = null) {
   }
 
   if (!sameSite) return SiteTier.none;
-  if (scheme && scheme.toLowerCase() === 'http') return SiteTier.insecure;
+  if (scheme && scheme.toLowerCase() === 'http' && !isLoopback(page.host)) return SiteTier.insecure;
   return exact ? SiteTier.exact : SiteTier.sameSite;
+}
+
+/**
+ * "localhost" and names under it ("app.localhost"): this computer itself.
+ * Browsers never send them to the network, so plain http there cannot be
+ * changed on the way.
+ */
+export function isLoopback(host) {
+  const name = String(host ?? '').toLowerCase().replace(/\.$/, '');
+  return name === 'localhost' || name.endsWith('.localhost');
+}
+
+/** A page nobody on the network could have changed: https, or this computer. */
+export function isSecurePage(url) {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol === 'https:' || (protocol === 'http:' && isLoopback(hostname));
+  } catch {
+    return false;
+  }
 }
 
 /**

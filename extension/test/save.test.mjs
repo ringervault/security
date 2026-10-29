@@ -60,6 +60,20 @@ test('titles and links', () => {
   assert.equal(siteTargetFor('http://example.com/login'), null);
 });
 
+test('localhost is a site of its own, over http too', () => {
+  const local = entry({ id: 'dev', title: 'Localhost', username: 'dev', password: 'old', autofillTargets: ['site:localhost'] });
+  assert.equal(siteTargetFor('http://localhost:3000/login'), 'site:localhost');
+  assert.equal(titleFor('http://localhost:3000/login'), 'Localhost');
+  assert.deepEqual(
+    planSave([], { url: 'http://localhost:3000/login', username: 'dev', password: 'x' }),
+    { action: SaveAction.create, title: 'Localhost' },
+  );
+  // Its traffic never crosses the network, so a new password updates it.
+  assert.equal(planSave([local], { url: 'http://localhost:8080/', username: 'dev', password: 'new' }).action, SaveAction.update);
+  // A name that only starts like it is an ordinary http site.
+  assert.equal(siteTargetFor('http://localhost.example.com/'), null);
+});
+
 const file = () => ({
   format: 'ringer-vault-sync',
   version: 1,

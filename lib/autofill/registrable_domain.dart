@@ -71,6 +71,11 @@ HostResult registrableDomain(String rawHost) {
   if (_looksLikeIp.hasMatch(host) || host.contains(':')) {
     return const HostResult.rejected(HostRejection.ipAddress);
   }
+  // This computer itself: a site of its own, for logins to things being
+  // built or run here. Nothing on the network can answer for it.
+  if (host == 'localhost') {
+    return const HostResult.ok(registrable: 'localhost', host: 'localhost');
+  }
 
   final labels = host.split('.');
   if (labels.length < 2 || labels.any((l) => l.isEmpty)) {
@@ -154,8 +159,19 @@ SiteTier siteTier({
   }
 
   if (!sameSite) return SiteTier.none;
-  if (scheme != null && scheme.toLowerCase() == 'http') return SiteTier.insecure;
+  if (scheme != null && scheme.toLowerCase() == 'http' && !isLoopback(page.host!)) {
+    return SiteTier.insecure;
+  }
   return exact ? SiteTier.exact : SiteTier.sameSite;
+}
+
+/// "localhost" and names under it ("app.localhost"): this device itself.
+/// Browsers never send them to the network, so plain http there cannot be
+/// changed on the way.
+bool isLoopback(String host) {
+  var name = host.toLowerCase();
+  if (name.endsWith('.')) name = name.substring(0, name.length - 1);
+  return name == 'localhost' || name.endsWith('.localhost');
 }
 
 final RegExp _asciiHost = RegExp(r'^[a-z0-9.-]+$');

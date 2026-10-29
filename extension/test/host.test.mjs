@@ -3,7 +3,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registrableDomain, hostOf, HostRejection } from '../src/vault/host.js';
+import { registrableDomain, hostOf, HostRejection, isLoopback, isSecurePage } from '../src/vault/host.js';
 import { candidatesFor } from '../src/vault/match.js';
 
 test('a subdomain is the same site', () => {
@@ -53,7 +53,7 @@ test('IP addresses are never matched', () => {
 });
 
 test('malformed hosts are rejected rather than guessed at', () => {
-  for (const bad of ['', '   ', 'localhost', 'has space.com', '.com', 'a..b']) {
+  for (const bad of ['', '   ', 'has space.com', '.com', 'a..b']) {
     assert.equal(registrableDomain(bad).isUsable, false, `accepted: "${bad}"`);
   }
 });
@@ -139,4 +139,25 @@ test('a look-alike page never gets the real credential', () => {
 test('an ordinary site is not flagged as a look-alike', () => {
   const result = candidatesFor([], 'https://chase.com/');
   assert.equal(result.punycode, false);
+});
+
+test('localhost is this computer: its own site, and secure over http', () => {
+  assert.equal(hostOf('http://localhost:3000/login').registrable, 'localhost');
+  assert.equal(isLoopback('localhost'), true);
+  assert.equal(isLoopback('app.localhost'), true);
+  assert.equal(isLoopback('localhost.example.com'), false);
+  assert.equal(isLoopback('evil-localhost'), false);
+  assert.equal(isSecurePage('http://localhost:3000/'), true);
+  assert.equal(isSecurePage('http://localhost.example.com/'), false);
+  assert.equal(isSecurePage('http://example.com/'), false);
+  assert.equal(isSecurePage('https://example.com/'), true);
+  // Addresses still belong to nobody.
+  assert.equal(hostOf('http://127.0.0.1:3000/').isUsable, false);
+
+  const dev = { id: 'd', title: 'Dev', username: 'u', email: '', password: 'p',
+    category: '', notes: '', autofillTargets: ['site:localhost'] };
+  const result = candidatesFor([dev], 'http://localhost:3000/login');
+  assert.equal(result.insecure, false);
+  assert.deepEqual(result.matched.map((c) => c.strength), ['saved']);
+  assert.equal(candidatesFor([dev], 'https://example.com/').matched.length, 0);
 });

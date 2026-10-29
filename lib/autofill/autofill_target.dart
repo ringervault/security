@@ -377,7 +377,7 @@ MatchResult matchEntry({
 /// nothing is offered at all:
 ///
 ///  * a web address claimed by something not verified to be a browser;
-///  * a page over plain http;
+///  * a page over plain http, other than this device's own (localhost);
 ///  * a compatibility mode request, whose structure is reconstructed and
 ///    easier to spoof;
 ///  * a browser asking without a web page, which is its own screens.
@@ -385,9 +385,9 @@ MatchResult? offerUnlinked(AutofillRequest request) {
   final claimed = request.claimedWebDomain;
   if (claimed != null && claimed.isNotEmpty) {
     if (!request.fromVerifiedBrowser || request.compatibilityMode) return null;
-    if (request.webScheme?.toLowerCase() == 'http') return null;
     final host = hostOf(claimed);
     if (!host.isUsable) return null;
+    if (request.webScheme?.toLowerCase() == 'http' && !isLoopback(host.host!)) return null;
     return MatchResult(
       MatchOutcome.needsConfirmation,
       MatchReason.firstUseOfSite,

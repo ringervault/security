@@ -6,7 +6,7 @@
 // "paypal" in the other proves nothing.
 
 import {
-  hostOf, isPunycode, registrableDomain, siteTier, SiteTier,
+  hostOf, isLoopback, isPunycode, registrableDomain, siteTier, SiteTier,
 } from './host.js';
 
 /** Targets are stored as "site:example.com" or "app:package:sha256". */
@@ -80,7 +80,7 @@ export function candidatesFor(entries, pageUrl) {
   return {
     domain: host.host,
     rejection: null,
-    insecure: scheme === 'http',
+    insecure: scheme === 'http' && !isLoopback(host.host),
     punycode: isPunycode(host.registrable),
     matched: matched.sort(
       (a, b) => order.indexOf(a.strength) - order.indexOf(b.strength) || byTitle(a, b),
