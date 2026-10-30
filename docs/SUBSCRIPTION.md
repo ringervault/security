@@ -41,6 +41,34 @@ access to what is already there.
 - "Restore purchase" asks Play again; a subscription belongs to the Google
   account on the phone, not to a vault.
 
+## Redeem codes
+
+Settings, and the subscription sheet, have **Redeem a code**. One box takes
+two kinds:
+
+- **Google Play promo codes** (letters and numbers, made in Play Console
+  under the subscription's promotions; 3 to 90 days). Google gives apps no
+  way to redeem these themselves, so the app opens the Play Store's own
+  redeem screen with the code filled in. The app sees the subscription when
+  it next comes to the front.
+- **Ringer Vault's own codes** (starting `RV-`, about 107 characters, meant
+  to be pasted): a day, a week, a month, a year or a lifetime of Premium,
+  or a cancel code, which stops Premium from codes there and then. Checked
+  on the phone, offline, by their Ed25519 signature (FORMATS.md, section
+  10). Each works once per phone. One redeemed while another runs adds on
+  after it. They are kept on the phone, and once sync is on (then or later)
+  in the sync file, so the extension counts them too and another device of
+  the same vault cannot use the same code again.
+
+Make them with `node tool/codes/make_codes.mjs --plan week --redeem-by
+2026-12-31 --count 5`. The signing key stays on the computer that makes
+codes; it is in no repository.
+
+Own codes are given away, never sold: Google Play's rules require its own
+billing for anything paid. With no server, a code cannot be stopped from
+working on several phones that do not share a vault, and a cancel code works
+only where it is redeemed. Give codes to people rather than posting them.
+
 ## How long an answer is believed
 
 Each time Play says the subscription is active, the phone records the time
@@ -85,7 +113,8 @@ the simple cases.
 | Free plan rules | `lib/subscription/plan.dart`, `extension/src/vault/plan.js` |
 | What Play said, and how long it holds | `lib/subscription/entitlement.dart` |
 | The extension's signature check | `extension/src/vault/plan.js` (`verifyPurchase`, `subscriptionIn`) |
-| Tests | `extension/test/plan.test.mjs` |
+| Redeem codes | `lib/subscription/redeem_code.dart`, `extension/src/vault/codes.js`, `tool/codes/make_codes.mjs`; format in `docs/FORMATS.md`, section 10 |
+| Tests | `extension/test/plan.test.mjs`, `extension/test/codes.test.mjs`, `test/redeem_code_cases_test.dart` (both run `test/fixtures/code_cases.json`) |
 
 The app's Google Play code, its screens, and the place every way of adding
 a login checks the limit are not part of this repository.

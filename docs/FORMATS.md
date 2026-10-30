@@ -596,6 +596,7 @@ sealed file (section 4) as base64 text. The plaintext inside is UTF-8 JSON:
 | `generation` | integer ≥ 0 | One more than the copy it replaced. Absent in version 1 files; read as 0. |
 | `records` | array | One per entry id, live or deleted |
 | `entitlement` | object, optional | Google Play's signed record of the subscription, as a phone last confirmed it (added 25 October 2026 inside version 2; older readers ignore it). See below. |
+| `codeGrants` | array, optional | Ringer Vault's own redeem codes, as redeemed on any device of this vault (added 30 October 2026 inside version 2; older readers ignore it, and an older app writing the file drops it until a newer phone writes it again). See section 10. |
 
 `writtenBy` and `writtenAt` are parsed by the app but nothing decides
 anything by them.
@@ -667,7 +668,11 @@ writes `Date.prototype.toISOString()`, also UTC with `Z`.
 
 - The app builds the object afresh from its merged records, and writes
   the six keys above, plus `entitlement` when it has one or the file had
-  one. A deleted record is written as
+  one, and `codeGrants` (the file's and its own together, each code once)
+  when there are any. A phone writes the file when it holds a code the
+  file does not, even with no entry changed: the fingerprint a phone keeps
+  to skip a sync with nothing new covers its subscription record and codes
+  as well as its entries. A deleted record is written as
   `{"id", "updatedAt", "deleted": true}` with no `entry`.
 - The extension spreads the parsed object (`{...parsed}`), replaces
   `writtenBy`, `writtenAt` and `records`, and then sets `version` to 2 and
@@ -919,6 +924,77 @@ after either vault's unlock.
 
 At most 300 files wait at once; the next save is refused with a message
 until older ones expire.
+
+## 10. Redeem codes
+
+Source: `lib/subscription/redeem_code.dart`, `lib/subscription/subscription_service.dart`,
+`extension/src/vault/codes.js`, `extension/src/vault/plan.js`,
+`tool/codes/make_codes.mjs`. Shared test cases: `test/fixtures/code_cases.json`.
+
+Ringer Vault's own codes give Premium for free: never sold, as anything
+paid goes through Google Play. They are made on the developer's computer and
+checked offline, with no server. A code is **signed, not secret**: anyone
+can read what it says, but only the holder of the private key can make one
+or change what one says.
+
+### The code
+
+Text: `RV-` followed by 78 bytes as unpadded base64url (107 characters in
+all). Readers drop whitespace first, so a code pasted across lines reads.
+
+| Bytes | Field | Notes |
+|---|---|---|
+| 0 | version | `1` |
+| 1..8 | id | 8 random bytes. One use each, per phone, and per vault once synced. Written as 16 lowercase hex digits where it is named |
+| 9 | kind | `1` days, `2` calendar months, `3` lifetime, `4` cancel. Anything else: not a code |
+| 10..11 | amount | u16. Days or months for kinds 1 and 2 (never 0); exactly 0 for kinds 3 and 4 |
+| 12..13 | last day | u16, days since 2020-01-01 UTC. Redeemable until the end of that day, UTC |
+| 14..77 | signature | Ed25519 over the ASCII bytes `ringer-vault-code` followed by bytes 0..13 |
+
+The tool's plans: `day` (1, 1), `week` (1, 7), `month` (2, 1), `year`
+(2, 12), `lifetime` (3, 0), `cancel` (4, 0). The public key is raw Ed25519,
+base64, as `RedeemCode.codePublicKey` and `CODE_PUBLIC_KEY`; the private key
+is `secrets/code-signing-key.pem` on the developer's computer only.
+
+### A redeemed code
+
+On the phone, in secure storage as `subscription.codeGrants`, and in the
+sync file as `codeGrants`: a JSON array of
+
+| Key | Type | Notes |
+|---|---|---|
+| `code` | string | The code, without whitespace |
+| `redeemedAt` | ISO 8601 string | When it was redeemed, by the redeeming phone's clock (never earlier than the latest time it had seen). Not signed: written by the phone, inside the encryption |
+
+### How long Premium runs
+
+Both sides count only codes whose signature checks out and whose
+`redeemedAt` is before the end of their last day; a code listed twice counts
+once, from its earlier `redeemedAt`. A malformed record is skipped. Then, in
+`redeemedAt` order, starting with nothing running:
+
+- days or months: starts at `redeemedAt`, or when what is running ends if
+  that is later, and runs that many days, or calendar months (as
+  JavaScript's `setUTCMonth` counts them: a month from 31 January is
+  3 March in a year whose February has 28 days). Nothing changes while a
+  lifetime runs.
+- lifetime: runs until 9999-01-01T00:00:00Z.
+- cancel: whatever is running ends at that `redeemedAt`. With nothing
+  running it does nothing (and the app refuses it, so it is not used up).
+
+Premium from codes is on while the clock is before the result. The app
+uses its ratcheted clock; the extension its own, kept from running
+backward (`ringer.latestSeen`). A code that would add Premium is refused
+while Google Play's subscription is active, so it is not wasted. A cancel
+code never touches a Google Play subscription, which is cancelled in the
+Play Store.
+
+### What a code cannot do
+
+With no server, nothing stops one code being redeemed on several phones
+that do not share a vault: each checks its own list, and its vault's. A
+cancel code only takes effect where it is redeemed. Codes are meant to be
+given to people, not posted publicly; a lifetime code especially.
 
 ## Inconsistencies and open questions
 

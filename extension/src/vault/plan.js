@@ -6,9 +6,14 @@
 // checks Google's signature on it with Play's public key for the app. Nothing
 // is sold here, and no server of ours is asked.
 //
+// Free days from one of Ringer Vault's own redeem codes count too: the
+// phone writes the codes it redeemed into the sync file (vault/codes.js).
+//
 // When a subscription ends, nothing saved is held back: every login can
 // still be filled, edited and deleted. Only adding more waits for room, or
 // for a subscription.
+
+import { CODE_PUBLIC_KEY, grantsStatus } from './codes.js';
 
 /** Logins a vault holds without a subscription (lib/subscription/plan.dart). */
 export const FREE_LOGINS = 20;
@@ -52,19 +57,37 @@ export class FreePlanFull extends Error {
 
 /**
  * What the decrypted sync file [parsed] says about the subscription:
- * { subscribed, lapsed }. Subscribed only with Google's signature checked,
- * this app's product, and a confirmation the phone made within
- * BELIEVED_MS. Lapsed: a record is there, but no longer believed.
+ * { subscribed, lapsed, codeUntil, viaPlay, codePlan, codeEndedAt, playRenews }. Subscribed through Google Play only with
+ * Google's signature checked, this app's product, and a confirmation the
+ * phone made within BELIEVED_MS; or through redeem codes still running
+ * (codeUntil, in ms, null when none). Lapsed: a record of either is there,
+ * but neither counts now.
  */
 export async function subscriptionIn(parsed, {
   now = Date.now(), licenseKey = PLAY_LICENSE_KEY, subtle = globalThis.crypto?.subtle,
+  codeKey = CODE_PUBLIC_KEY,
 } = {}) {
   const record = parsed?.entitlement;
-  if (!record || typeof record !== 'object') return { subscribed: false, lapsed: false };
-  const confirmedAt = Date.parse(record.confirmedAt ?? '');
-  const genuine = await verifyPurchase(record.purchaseJson, record.signature, { licenseKey, subtle });
-  const fresh = Number.isFinite(confirmedAt) && now < confirmedAt + BELIEVED_MS;
-  return { subscribed: genuine && fresh, lapsed: !(genuine && fresh) };
+  let play = false;
+  if (record && typeof record === 'object') {
+    const confirmedAt = Date.parse(record.confirmedAt ?? '');
+    const genuine = await verifyPurchase(record.purchaseJson, record.signature, { licenseKey, subtle });
+    play = genuine && Number.isFinite(confirmedAt) && now < confirmedAt + BELIEVED_MS;
+  }
+  const { until, plan } = await grantsStatus(parsed?.codeGrants, { publicKey: codeKey, subtle });
+  const byCode = until !== null && now < until;
+  const hadAny = (record && typeof record === 'object') || until !== null;
+  return {
+    subscribed: play || byCode,
+    lapsed: Boolean(hadAny) && !(play || byCode),
+    codeUntil: byCode ? until : null,
+    viaPlay: play,
+    // For saying the plan and its date: which code, when one ended, and
+    // whether Google Play's renews (Play tells the phone no dates).
+    codePlan: byCode ? plan : null,
+    codeEndedAt: until !== null && !byCode ? until : null,
+    playRenews: play && renews(record),
+  };
 }
 
 /**
@@ -90,6 +113,16 @@ export async function verifyPurchase(purchaseJson, signature, { licenseKey = PLA
       'spki', fromBase64(licenseKey), { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-1' }, false, ['verify'],
     );
     return await subtle.verify('RSASSA-PKCS1-v1_5', key, fromBase64(signature), new TextEncoder().encode(purchaseJson));
+  } catch {
+    return false;
+  }
+}
+
+/** Whether a Play record says it renews: the phone's word, else Google's. */
+function renews(record) {
+  if (typeof record.autoRenewing === 'boolean') return record.autoRenewing;
+  try {
+    return JSON.parse(record.purchaseJson).autoRenewing === true;
   } catch {
     return false;
   }

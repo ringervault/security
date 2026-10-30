@@ -1,0 +1,327 @@
+{
+  "_about": "Redeem codes the app (Dart) and the extension (JavaScript) must agree on, signed with a test key made for this file only. Both test suites load it. Made with tool/codes/make_codes.mjs. kind: 1 days, 2 calendar months, 3 lifetime, 4 cancel. A lifetime runs until 9999-01-01.",
+  "publicKey": "tBp/pzplYGqs77t+STEZuGPafY533cHL4bD4dJUUKak=",
+  "codes": [
+    {
+      "why": "one day",
+      "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+      "genuine": true,
+      "id": "0101010101010101",
+      "kind": 1,
+      "amount": 1,
+      "redeemBy": "2027-12-31"
+    },
+    {
+      "why": "one week",
+      "code": "RV-AQICAgICAgICAQAHC2mnDjFx4k24RMQ4vzbVq-D-u2lCnaew7BuhhIbFYbwLPlJXzrXdSs45krM0NfXSmJ7CwN0fbyAXwEGXecyXSPwP",
+      "genuine": true,
+      "id": "0202020202020202",
+      "kind": 1,
+      "amount": 7,
+      "redeemBy": "2027-12-31"
+    },
+    {
+      "why": "one month",
+      "code": "RV-AQMDAwMDAwMDAgABC2ln_1Qes-jstrvosDWWTqONefeNJlP9afYcD-DRez_xkGbYc6nYUFPmRNlvM8poASxy7nppdcbPKIBLmHIzy3EF",
+      "genuine": true,
+      "id": "0303030303030303",
+      "kind": 2,
+      "amount": 1,
+      "redeemBy": "2027-12-31"
+    },
+    {
+      "why": "one year",
+      "code": "RV-AQQEBAQEBAQEAgAMC2kn8n7UsQRONzxIW11txn4EcGz78oW9dqA4u5Yujm5ZVDdo-8Y8ElaZ2XzNDSe7cgTAhdMyLvX-tQYQVyE7-RQK",
+      "genuine": true,
+      "id": "0404040404040404",
+      "kind": 2,
+      "amount": 12,
+      "redeemBy": "2027-12-31"
+    },
+    {
+      "why": "lifetime",
+      "code": "RV-AQUFBQUFBQUFAwAAC2nlkkBGu5ESwJSbC9zADhAPyzznTxzEmB1XG6Tid41izVvbSrbEVO9BjIYvCYbSUMW5m-u_HZpuh2KCN0Z0cocC",
+      "genuine": true,
+      "id": "0505050505050505",
+      "kind": 3,
+      "amount": 0,
+      "redeemBy": "2027-12-31"
+    },
+    {
+      "why": "cancel",
+      "code": "RV-AQYGBgYGBgYGBAAAC2lz8p41DNKJSGYmTf0jdC5TW0nH0wUrXyIO6xeT5FZwi-SfwAxcANbexkclrQbjaWe514tUezqlMRPcSoVyLw8D",
+      "genuine": true,
+      "id": "0606060606060606",
+      "kind": 4,
+      "amount": 0,
+      "redeemBy": "2027-12-31"
+    },
+    {
+      "why": "to be redeemed by 30 June 2026",
+      "code": "RV-AQcHBwcHBwcHAQABCUTdMzounRVDwXEuYKRyESRn7UuTJBsF9UduTRVXez3TkkaFaStut1j7NffC7R91SuKw0OHC5dim34lsjtrwC-kH",
+      "genuine": true,
+      "id": "0707070707070707",
+      "kind": 1,
+      "amount": 1,
+      "redeemBy": "2026-06-30"
+    },
+    {
+      "why": "signed with another key",
+      "code": "RV-AQgICAgICAgIAwAAC2m8eWz_CwUYdLZ0xwX7f2hELNydkL79yA1uuDTRm4gOF5sHNaXMbaZqn7I7zcrJubHOyTo4igLHG4TGMdOgshkN",
+      "genuine": false
+    },
+    {
+      "why": "a day turned into a lifetime after signing",
+      "code": "RV-AQEBAQEBAQEBAwABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+      "genuine": false
+    },
+    {
+      "why": "pasted with spaces and a line break",
+      "code": "RV-AQICAgICAgICAQAHC2mnDjFx4k24RMQ4vzbVq \n-D-u2lCnaew7BuhhIbFYbwLPlJXzrXdSs45krM0NfXSmJ7CwN0fbyAXwEGXecyXSPwP",
+      "genuine": true,
+      "id": "0202020202020202",
+      "kind": 1,
+      "amount": 7,
+      "redeemBy": "2027-12-31"
+    },
+    {
+      "why": "cut short",
+      "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKy",
+      "genuine": false
+    },
+    {
+      "why": "a Google Play code",
+      "code": "ABCD1234EFGH5678",
+      "genuine": false
+    }
+  ],
+  "grants": [
+    {
+      "why": "a day from redeeming",
+      "grants": [
+        {
+          "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+          "redeemedAt": "2026-11-01T10:00:00.000Z"
+        }
+      ],
+      "until": "2026-11-02T10:00:00.000Z"
+    },
+    {
+      "why": "a week redeemed while a day runs adds on after it",
+      "grants": [
+        {
+          "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+          "redeemedAt": "2026-11-01T10:00:00.000Z"
+        },
+        {
+          "code": "RV-AQICAgICAgICAQAHC2mnDjFx4k24RMQ4vzbVq-D-u2lCnaew7BuhhIbFYbwLPlJXzrXdSs45krM0NfXSmJ7CwN0fbyAXwEGXecyXSPwP",
+          "redeemedAt": "2026-11-01T12:00:00.000Z"
+        }
+      ],
+      "until": "2026-11-09T10:00:00.000Z"
+    },
+    {
+      "why": "a code redeemed after the last ran out starts then",
+      "grants": [
+        {
+          "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+          "redeemedAt": "2026-11-01T10:00:00.000Z"
+        },
+        {
+          "code": "RV-AQICAgICAgICAQAHC2mnDjFx4k24RMQ4vzbVq-D-u2lCnaew7BuhhIbFYbwLPlJXzrXdSs45krM0NfXSmJ7CwN0fbyAXwEGXecyXSPwP",
+          "redeemedAt": "2026-11-10T00:00:00.000Z"
+        }
+      ],
+      "until": "2026-11-17T00:00:00.000Z"
+    },
+    {
+      "why": "a month is a calendar month",
+      "grants": [
+        {
+          "code": "RV-AQMDAwMDAwMDAgABC2ln_1Qes-jstrvosDWWTqONefeNJlP9afYcD-DRez_xkGbYc6nYUFPmRNlvM8poASxy7nppdcbPKIBLmHIzy3EF",
+          "redeemedAt": "2026-11-15T08:00:00.000Z"
+        }
+      ],
+      "until": "2026-12-15T08:00:00.000Z"
+    },
+    {
+      "why": "a month from the 31st runs over a short month as the calendar does",
+      "grants": [
+        {
+          "code": "RV-AQMDAwMDAwMDAgABC2ln_1Qes-jstrvosDWWTqONefeNJlP9afYcD-DRez_xkGbYc6nYUFPmRNlvM8poASxy7nppdcbPKIBLmHIzy3EF",
+          "redeemedAt": "2027-01-31T10:00:00.000Z"
+        }
+      ],
+      "until": "2027-03-03T10:00:00.000Z"
+    },
+    {
+      "why": "a year is twelve calendar months",
+      "grants": [
+        {
+          "code": "RV-AQQEBAQEBAQEAgAMC2kn8n7UsQRONzxIW11txn4EcGz78oW9dqA4u5Yujm5ZVDdo-8Y8ElaZ2XzNDSe7cgTAhdMyLvX-tQYQVyE7-RQK",
+          "redeemedAt": "2026-11-01T00:00:00.000Z"
+        }
+      ],
+      "until": "2027-11-01T00:00:00.000Z"
+    },
+    {
+      "why": "lifetime",
+      "grants": [
+        {
+          "code": "RV-AQUFBQUFBQUFAwAAC2nlkkBGu5ESwJSbC9zADhAPyzznTxzEmB1XG6Tid41izVvbSrbEVO9BjIYvCYbSUMW5m-u_HZpuh2KCN0Z0cocC",
+          "redeemedAt": "2026-11-01T00:00:00.000Z"
+        }
+      ],
+      "until": "9999-01-01T00:00:00.000Z"
+    },
+    {
+      "why": "anything after a lifetime changes nothing",
+      "grants": [
+        {
+          "code": "RV-AQUFBQUFBQUFAwAAC2nlkkBGu5ESwJSbC9zADhAPyzznTxzEmB1XG6Tid41izVvbSrbEVO9BjIYvCYbSUMW5m-u_HZpuh2KCN0Z0cocC",
+          "redeemedAt": "2026-11-01T00:00:00.000Z"
+        },
+        {
+          "code": "RV-AQICAgICAgICAQAHC2mnDjFx4k24RMQ4vzbVq-D-u2lCnaew7BuhhIbFYbwLPlJXzrXdSs45krM0NfXSmJ7CwN0fbyAXwEGXecyXSPwP",
+          "redeemedAt": "2026-11-02T00:00:00.000Z"
+        }
+      ],
+      "until": "9999-01-01T00:00:00.000Z"
+    },
+    {
+      "why": "cancel stops a running code there and then",
+      "grants": [
+        {
+          "code": "RV-AQICAgICAgICAQAHC2mnDjFx4k24RMQ4vzbVq-D-u2lCnaew7BuhhIbFYbwLPlJXzrXdSs45krM0NfXSmJ7CwN0fbyAXwEGXecyXSPwP",
+          "redeemedAt": "2026-11-01T10:00:00.000Z"
+        },
+        {
+          "code": "RV-AQYGBgYGBgYGBAAAC2lz8p41DNKJSGYmTf0jdC5TW0nH0wUrXyIO6xeT5FZwi-SfwAxcANbexkclrQbjaWe514tUezqlMRPcSoVyLw8D",
+          "redeemedAt": "2026-11-03T09:30:00.000Z"
+        }
+      ],
+      "until": "2026-11-03T09:30:00.000Z"
+    },
+    {
+      "why": "cancel stops a lifetime too",
+      "grants": [
+        {
+          "code": "RV-AQUFBQUFBQUFAwAAC2nlkkBGu5ESwJSbC9zADhAPyzznTxzEmB1XG6Tid41izVvbSrbEVO9BjIYvCYbSUMW5m-u_HZpuh2KCN0Z0cocC",
+          "redeemedAt": "2026-11-01T00:00:00.000Z"
+        },
+        {
+          "code": "RV-AQYGBgYGBgYGBAAAC2lz8p41DNKJSGYmTf0jdC5TW0nH0wUrXyIO6xeT5FZwi-SfwAxcANbexkclrQbjaWe514tUezqlMRPcSoVyLw8D",
+          "redeemedAt": "2026-11-05T00:00:00.000Z"
+        }
+      ],
+      "until": "2026-11-05T00:00:00.000Z"
+    },
+    {
+      "why": "a code redeemed after a cancel counts from then",
+      "grants": [
+        {
+          "code": "RV-AQUFBQUFBQUFAwAAC2nlkkBGu5ESwJSbC9zADhAPyzznTxzEmB1XG6Tid41izVvbSrbEVO9BjIYvCYbSUMW5m-u_HZpuh2KCN0Z0cocC",
+          "redeemedAt": "2026-11-01T00:00:00.000Z"
+        },
+        {
+          "code": "RV-AQYGBgYGBgYGBAAAC2lz8p41DNKJSGYmTf0jdC5TW0nH0wUrXyIO6xeT5FZwi-SfwAxcANbexkclrQbjaWe514tUezqlMRPcSoVyLw8D",
+          "redeemedAt": "2026-11-05T00:00:00.000Z"
+        },
+        {
+          "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+          "redeemedAt": "2026-11-06T00:00:00.000Z"
+        }
+      ],
+      "until": "2026-11-07T00:00:00.000Z"
+    },
+    {
+      "why": "a cancel with nothing running gives nothing",
+      "grants": [
+        {
+          "code": "RV-AQYGBgYGBgYGBAAAC2lz8p41DNKJSGYmTf0jdC5TW0nH0wUrXyIO6xeT5FZwi-SfwAxcANbexkclrQbjaWe514tUezqlMRPcSoVyLw8D",
+          "redeemedAt": "2026-11-01T00:00:00.000Z"
+        }
+      ],
+      "until": null
+    },
+    {
+      "why": "a cancel after the code ran out changes nothing",
+      "grants": [
+        {
+          "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+          "redeemedAt": "2026-11-01T00:00:00.000Z"
+        },
+        {
+          "code": "RV-AQYGBgYGBgYGBAAAC2lz8p41DNKJSGYmTf0jdC5TW0nH0wUrXyIO6xeT5FZwi-SfwAxcANbexkclrQbjaWe514tUezqlMRPcSoVyLw8D",
+          "redeemedAt": "2026-11-09T00:00:00.000Z"
+        }
+      ],
+      "until": "2026-11-02T00:00:00.000Z"
+    },
+    {
+      "why": "the same code twice counts once, from its first use",
+      "grants": [
+        {
+          "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+          "redeemedAt": "2026-11-03T00:00:00.000Z"
+        },
+        {
+          "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+          "redeemedAt": "2026-11-01T10:00:00.000Z"
+        }
+      ],
+      "until": "2026-11-02T10:00:00.000Z"
+    },
+    {
+      "why": "redeemed after its last day does not count",
+      "grants": [
+        {
+          "code": "RV-AQcHBwcHBwcHAQABCUTdMzounRVDwXEuYKRyESRn7UuTJBsF9UduTRVXez3TkkaFaStut1j7NffC7R91SuKw0OHC5dim34lsjtrwC-kH",
+          "redeemedAt": "2026-07-01T00:00:00.000Z"
+        }
+      ],
+      "until": null
+    },
+    {
+      "why": "redeemed on its last day counts",
+      "grants": [
+        {
+          "code": "RV-AQcHBwcHBwcHAQABCUTdMzounRVDwXEuYKRyESRn7UuTJBsF9UduTRVXez3TkkaFaStut1j7NffC7R91SuKw0OHC5dim34lsjtrwC-kH",
+          "redeemedAt": "2026-06-30T23:00:00.000Z"
+        }
+      ],
+      "until": "2026-07-01T23:00:00.000Z"
+    },
+    {
+      "why": "a code that is not genuine does not count",
+      "grants": [
+        {
+          "code": "RV-AQEBAQEBAQEBAwABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+          "redeemedAt": "2026-11-01T10:00:00.000Z"
+        },
+        {
+          "code": "RV-AQgICAgICAgIAwAAC2m8eWz_CwUYdLZ0xwX7f2hELNydkL79yA1uuDTRm4gOF5sHNaXMbaZqn7I7zcrJubHOyTo4igLHG4TGMdOgshkN",
+          "redeemedAt": "2026-11-01T10:00:00.000Z"
+        }
+      ],
+      "until": null
+    },
+    {
+      "why": "a damaged record is skipped, the rest counts",
+      "grants": [
+        {
+          "code": "RV-AQEBAQEBAQEBAQABC2klGGOuwkMBoEvv8m5n9P3gxwnNFC-K0v9ziQZKyz6Iuv4GS8Ox6yMkpcENpmTpRZ_ec9m-bNw1rOQI3aJgp9UK",
+          "redeemedAt": "yesterday"
+        },
+        {
+          "code": 42
+        },
+        {
+          "code": "RV-AQICAgICAgICAQAHC2mnDjFx4k24RMQ4vzbVq-D-u2lCnaew7BuhhIbFYbwLPlJXzrXdSs45krM0NfXSmJ7CwN0fbyAXwEGXecyXSPwP",
+          "redeemedAt": "2026-11-01T00:00:00.000Z"
+        }
+      ],
+      "until": "2026-11-08T00:00:00.000Z"
+    }
+  ]
+}

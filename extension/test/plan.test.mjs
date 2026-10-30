@@ -65,13 +65,13 @@ test('with no key set, nothing can be verified', async () => {
 test('subscribed within 35 days of the phone\'s last confirmation, lapsed after', async () => {
   const record = { ...(await signed()), confirmedAt: new Date(now).toISOString() };
   assert.deepEqual(await subscriptionIn(fileWith(record), { now: now + BELIEVED_MS - 1000, licenseKey }),
-    { subscribed: true, lapsed: false });
+    { subscribed: true, lapsed: false, codeUntil: null, viaPlay: true, codePlan: null, codeEndedAt: null, playRenews: true });
   assert.deepEqual(await subscriptionIn(fileWith(record), { now: now + BELIEVED_MS + 1000, licenseKey }),
-    { subscribed: false, lapsed: true });
+    { subscribed: false, lapsed: true, codeUntil: null, viaPlay: false, codePlan: null, codeEndedAt: null, playRenews: false });
 });
 
 test('a file without a record is the free plan', async () => {
-  assert.deepEqual(await subscriptionIn({ records: [] }, { now, licenseKey }), { subscribed: false, lapsed: false });
+  assert.deepEqual(await subscriptionIn({ records: [] }, { now, licenseKey }), { subscribed: false, lapsed: false, codeUntil: null, viaPlay: false, codePlan: null, codeEndedAt: null, playRenews: false });
 });
 
 test('deleted records do not count as logins', () => {

@@ -13,7 +13,10 @@ class PasswordGenerator {
   static const String _lower = 'abcdefghijkmnopqrstuvwxyz';
   static const String _upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   static const String _digits = '23456789';
-  static const String _symbols = '!@#\$%^&*-_=+?';
+
+  /// The special characters used unless the user narrows them: some sites
+  /// refuse a few, so the generator takes the ones a site allows instead.
+  static const String defaultSymbols = '!@#\$%^&*-_=+?';
 
   // Note the omissions above: l, I, 1, O, 0. Ambiguous glyphs are the usual
   // cause of a password that "doesn't work" when read off a screen and typed
@@ -27,26 +30,31 @@ class PasswordGenerator {
   ///
   /// Uses [Random.secure]: the generator seeds real credentials, so a
   /// predictable PRNG would undermine every password it produces.
+  ///
+  /// [allowedSymbols] are the special characters to use, cleaned by
+  /// [cleanSymbols]; none left means no special characters at all.
   static String generate({
     int length = defaultLength,
     bool lowercase = true,
     bool uppercase = true,
     bool digits = true,
     bool symbols = true,
+    String allowedSymbols = defaultSymbols,
   }) {
+    final special = cleanSymbols(allowedSymbols);
     final pools = <String>[
       if (lowercase) _lower,
       if (uppercase) _upper,
       if (digits) _digits,
-      if (symbols) _symbols,
+      if (symbols && special.isNotEmpty) special,
     ];
 
     // Defence in depth. The UI refuses to let the last set be turned off, so
-    // reaching this means a programmatic caller passed an impossible request;
-    // silently downgrading to lowercase-only would hand back a far weaker
-    // password than asked for, so this is the safest set instead.
+    // reaching this means nothing usable was asked for. Lowercase only would
+    // be far weaker than asked, and special characters may be what the user
+    // ruled out, so letters and numbers instead.
     if (pools.isEmpty) {
-      pools.addAll([_lower, _upper, _digits, _symbols]);
+      pools.addAll([_lower, _upper, _digits]);
     }
 
     final clamped = length.clamp(minLength, maxLength);
@@ -73,6 +81,23 @@ class PasswordGenerator {
     }
 
     return chars.join();
+  }
+
+  /// The special characters in [raw] a password can use: printable ASCII
+  /// that is neither a letter, a digit nor a space, each once, in the order
+  /// typed. Spaces, letters and digits are dropped rather than refused, so
+  /// a site's list can be pasted with its spaces ("! @ # \$").
+  static String cleanSymbols(String raw) {
+    final seen = <int>{};
+    final out = StringBuffer();
+    for (final c in raw.codeUnits) {
+      final printable = c >= 0x21 && c <= 0x7e;
+      final letterOrDigit = (c >= 0x30 && c <= 0x39) ||
+          (c >= 0x41 && c <= 0x5a) ||
+          (c >= 0x61 && c <= 0x7a);
+      if (printable && !letterOrDigit && seen.add(c)) out.writeCharCode(c);
+    }
+    return out.toString();
   }
 
   /// Words for passphrase mode: the EFF Large Wordlist (7,776 words, about
@@ -126,12 +151,13 @@ class PasswordGenerator {
     bool uppercase = true,
     bool digits = true,
     bool symbols = true,
+    String allowedSymbols = defaultSymbols,
   }) {
     var poolSize = 0;
     if (lowercase) poolSize += _lower.length;
     if (uppercase) poolSize += _upper.length;
     if (digits) poolSize += _digits.length;
-    if (symbols) poolSize += _symbols.length;
+    if (symbols) poolSize += cleanSymbols(allowedSymbols).length;
     if (poolSize == 0) poolSize = _lower.length;
 
     return length * (log(poolSize) / log(2));
