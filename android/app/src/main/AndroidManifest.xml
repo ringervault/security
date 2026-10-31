@@ -118,6 +118,16 @@
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/AutofillSheetTheme"/>
 
+        <!-- "Use the same password": copies the password box into the
+             confirm box, and closes at once without drawing anything. -->
+        <activity
+            android:name=".autofill.SamePasswordActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

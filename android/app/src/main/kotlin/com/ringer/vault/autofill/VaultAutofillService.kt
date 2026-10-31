@@ -76,8 +76,9 @@ class VaultAutofillService : AutofillService() {
         // credential here invites filling the old password into the "new
         // password" box, which is how people lock themselves out. What is
         // useful here is the opposite: offering to save the new password.
+        val chips = KeyboardChips.of(this, request)
         if (form.isSignUp) {
-            callback.onSuccess(buildSaveOnlyResponse(form))
+            callback.onSuccess(buildSaveOnlyResponse(form, chips))
             return
         }
 
@@ -97,7 +98,7 @@ class VaultAutofillService : AutofillService() {
         } else {
             null
         }
-        callback.onSuccess(buildUnlockResponse(form, fillIds, identity, compatibilityMode, typedUsername, next))
+        callback.onSuccess(buildUnlockResponse(form, fillIds, identity, compatibilityMode, typedUsername, next, chips))
     }
 
     /** Everything the screen needs to know about who is asking. */
@@ -122,7 +123,7 @@ class VaultAutofillService : AutofillService() {
     }
 
     /** A sign-up form: nothing to fill, but the new password is worth keeping. */
-    private fun buildSaveOnlyResponse(form: ParsedForm): FillResponse? {
+    private fun buildSaveOnlyResponse(form: ParsedForm, chips: KeyboardChips?): FillResponse? {
         val newPassword = form.newPasswordId ?: return null
         val info = SaveInfo.Builder(
             SaveInfo.SAVE_DATA_TYPE_USERNAME or SaveInfo.SAVE_DATA_TYPE_PASSWORD,
@@ -131,7 +132,58 @@ class VaultAutofillService : AutofillService() {
             form.usernameId?.let { setOptionalIds(arrayOf(it)) }
             whenToOffer(this, form)
         }.build()
-        return FillResponse.Builder().setSaveInfo(info).build()
+
+        // The password box offers a strong password, made here and now, so
+        // nothing from the vault is involved and no unlock is needed. The
+        // confirm box offers whatever the password box holds when it is
+        // tapped, generated or typed (SamePasswordActivity reads it then).
+        // Each is shown only in its own box. The password is offered for
+        // saving when the form is sent.
+        val boxes = form.newPasswordIds.ifEmpty { listOf(newPassword) }
+        val builder = FillResponse.Builder()
+
+        val password = PasswordMaker.make(PasswordMaker.allowedSymbols(this))
+        @Suppress("DEPRECATION")
+        val generated = Dataset.Builder(row(R.string.autofill_generate))
+            .setValue(boxes.first(), AutofillValue.forText(password))
+            .chip(chips, getString(R.string.autofill_generate))
+            .build()
+        builder.addDataset(generated)
+
+        val confirms = boxes.drop(1)
+        if (confirms.isNotEmpty()) {
+            val intent = Intent(this, SamePasswordActivity::class.java)
+                .putExtra(SamePasswordActivity.EXTRA_FROM, boxes.first())
+                .putParcelableArrayListExtra(SamePasswordActivity.EXTRA_TO, ArrayList(confirms))
+            val sender = PendingIntent.getActivity(
+                this,
+                SAME_PASSWORD_REQUEST,
+                intent,
+                PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_MUTABLE,
+            ).intentSender
+            @Suppress("DEPRECATION")
+            val same = Dataset.Builder(row(R.string.autofill_same)).apply {
+                confirms.forEach { setValue(it, null) }
+                setAuthentication(sender)
+                chip(chips, getString(R.string.autofill_same))
+            }.build()
+            builder.addDataset(same)
+        }
+
+        return builder.setSaveInfo(info).build()
+    }
+
+    /** One row of the suggestion list, saying [text]. */
+    private fun row(text: Int) = RemoteViews(packageName, R.layout.autofill_row).apply {
+        setTextViewText(R.id.autofill_row_text, getString(text))
+    }
+
+    /** The same row as a keyboard chip, for keyboards that take them. */
+    private fun Dataset.Builder.chip(chips: KeyboardChips?, text: String): Dataset.Builder = apply {
+        if (chips != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            @Suppress("DEPRECATION")
+            chips.next(text)?.let { setInlinePresentation(it) }
+        }
     }
 
     /**
@@ -148,6 +200,7 @@ class VaultAutofillService : AutofillService() {
         compatibilityMode: Boolean,
         typedUsername: String? = null,
         next: NextStep.Held? = null,
+        chips: KeyboardChips? = null,
     ): FillResponse {
         val presentation = RemoteViews(packageName, R.layout.autofill_row).apply {
             setTextViewText(R.id.autofill_row_text, getString(R.string.autofill_unlock))
@@ -176,7 +229,7 @@ class VaultAutofillService : AutofillService() {
             // No values yet: they only exist once the vault is open.
             fillIds.forEach { id -> setValue(id, null) }
             setAuthentication(sender)
-        }.build()
+        }
 
         val builder = FillResponse.Builder()
         // The login chosen on the page before, first and ready to fill; the
@@ -193,10 +246,12 @@ class VaultAutofillService : AutofillService() {
                 form.usernameId?.let { id ->
                     next.username?.let { setValue(id, AutofillValue.forText(it)) }
                 }
+                chip(chips, label)
             }.build()
             builder.addDataset(dataset)
         }
-        builder.addDataset(unlockRow)
+        // Its chip after the ready login's, so the chips keep the rows' order.
+        builder.addDataset(unlockRow.chip(chips, getString(R.string.autofill_unlock)).build())
 
         // Offer to remember a credential the user has just typed in.
         saveInfoFor(form)?.let(builder::setSaveInfo)
@@ -321,5 +376,6 @@ class VaultAutofillService : AutofillService() {
 
     private companion object {
         const val REQUEST_CODE = 1001
+        const val SAME_PASSWORD_REQUEST = 1002
     }
 }

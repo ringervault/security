@@ -22,6 +22,11 @@ data class ParsedForm(
     /** The first "choose a new password" box on a sign-up or change form. */
     val newPasswordId: AutofillId? = null,
     /**
+     * Every "choose a new password" box on the form, the confirm box too, in
+     * screen order: a generated password goes into all of them.
+     */
+    val newPasswordIds: List<AutofillId> = emptyList(),
+    /**
      * What is typed in the fields. Empty when a fill is requested; filled in
      * when Android hands the form back to be saved.
      */
@@ -100,6 +105,29 @@ object StructureParser {
         "sign_in", "submit", "continue", "next", "proceed", "unlock", "enter",
     )
 
+    /** The new-password tokens that mean "the same again": a confirmation box. */
+    private val CONFIRM_HINTS = setOf(
+        "confirmpassword", "confirm-password", "confirm_password", "confirm password",
+        "repeatpassword", "repeat password", "retypepassword", "retype password",
+        "passwordagain", "password_again",
+    )
+
+    /** Tokens meaning "your current password", on a change-password form. */
+    private val CURRENT_PASSWORD_HINTS = setOf(
+        "currentpassword", "current-password", "current_password", "current password",
+        "oldpassword", "old-password", "old_password", "old password",
+    )
+
+    /**
+     * Button words that only a sign-up or change-password form uses. Two
+     * plain password boxes count as such a form only beside one of these: a
+     * login with a password and a PIN box must stay a login.
+     */
+    private val SIGN_UP_ONLY_WORDS = listOf(
+        "sign up", "signup", "sign-up", "sign_up", "register", "create", "join",
+        "reset", "change", "update", "set password", "save",
+    )
+
     /** Words on a button that sends a sign-up or change-password form. */
     private val SIGN_UP_BUTTON_WORDS = listOf(
         "sign up", "signup", "sign-up", "sign_up", "register", "create",
@@ -132,6 +160,12 @@ object StructureParser {
         var webScheme: String? = null
         var sawNewPassword = false
         var newPasswordId: AutofillId? = null
+        val newPasswordIds = mutableListOf<AutofillId>()
+        // Every password box, in screen order: what kind it says it is, and
+        // what is in it. Which are for a new password is decided once all
+        // are seen (newPasswordPlan).
+        data class Box(val id: AutofillId, val kind: BoxKind, val value: String?, val page: Page?)
+        val boxes = mutableListOf<Box>()
         var usernameValue: String? = null
         var passwordValue: String? = null
         var newPasswordValue: String? = null
@@ -163,18 +197,13 @@ object StructureParser {
                 when {
                     // Checked before isPassword, because a "confirm password"
                     // box looks exactly like a password box.
-                    isNewPassword(node) -> {
-                        sawNewPassword = true
-                        if (newPasswordId == null) {
-                            newPasswordId = node.autofillId
-                            newPasswordValue = textOf(node)
-                            newPasswordPage = page
-                        }
+                    isNewPassword(node) -> node.autofillId?.let {
+                        val kind = if (hintsName(node, CONFIRM_HINTS)) BoxKind.CONFIRM else BoxKind.NEW
+                        boxes += Box(it, kind, textOf(node), page)
                     }
-                    isPassword(node) -> if (passwordId == null) {
-                        passwordId = node.autofillId
-                        passwordValue = textOf(node)
-                        passwordPage = page
+                    isPassword(node) -> node.autofillId?.let {
+                        val kind = if (isCurrentPassword(node)) BoxKind.CURRENT else BoxKind.PLAIN
+                        boxes += Box(it, kind, textOf(node), page)
                     }
                     isUsername(node) -> if (usernameId == null) {
                         usernameId = node.autofillId
@@ -188,7 +217,7 @@ object StructureParser {
                 val id = node.autofillId
                 val label = buttonLabel(node)
                 if (id != null && label.isNotBlank()) {
-                    buttons += Button(id, label, passwordId != null || newPasswordId != null)
+                    buttons += Button(id, label, boxes.isNotEmpty())
                 }
             }
 
@@ -197,6 +226,22 @@ object StructureParser {
 
         for (i in 0 until structure.windowNodeCount) {
             visit(structure.getWindowNodeAt(i).rootViewNode, null, false)
+        }
+
+        // Which boxes take a new password, and which the current one.
+        val signUpButton = buttons.any { b -> SIGN_UP_ONLY_WORDS.any { b.label.contains(it) } }
+        val (fresh, current) = newPasswordPlan(boxes.map { it.kind }, signUpButton)
+        sawNewPassword = fresh.isNotEmpty()
+        newPasswordIds += fresh.map { boxes[it].id }
+        fresh.firstOrNull()?.let { first ->
+            newPasswordId = boxes[first].id
+            newPasswordValue = boxes[first].value
+            newPasswordPage = boxes[first].page
+        }
+        current?.let {
+            passwordId = boxes[it].id
+            passwordValue = boxes[it].value
+            passwordPage = boxes[it].page
         }
 
         // The page that counts: the password box's, else the new password
@@ -209,6 +254,7 @@ object StructureParser {
             usernameId = null
             passwordId = null
             newPasswordId = null
+            newPasswordIds.clear()
             usernameValue = null
             passwordValue = null
             newPasswordValue = null
@@ -235,6 +281,7 @@ object StructureParser {
             webScheme = webScheme,
             isSignUp = sawNewPassword,
             newPasswordId = newPasswordId,
+            newPasswordIds = newPasswordIds.toList(),
             usernameValue = usernameValue,
             passwordValue = passwordValue,
             newPasswordValue = newPasswordValue,
@@ -282,6 +329,19 @@ object StructureParser {
     ).joinToString(" ").lowercase()
 
     /** The text in a field, or null when it is empty. */
+    /** What is in the field [id] of [structure] now, or null. */
+    fun valueOf(structure: AssistStructure, id: AutofillId): String? {
+        fun find(node: AssistStructure.ViewNode): AssistStructure.ViewNode? {
+            if (node.autofillId == id) return node
+            for (i in 0 until node.childCount) find(node.getChildAt(i))?.let { return it }
+            return null
+        }
+        for (i in 0 until structure.windowNodeCount) {
+            find(structure.getWindowNodeAt(i).rootViewNode)?.let { return textOf(it) }
+        }
+        return null
+    }
+
     private fun textOf(node: AssistStructure.ViewNode): String? =
         node.autofillValue
             ?.takeIf { it.isText }
@@ -326,6 +386,60 @@ object StructureParser {
             return true
         }
         return hintsName(node, NEW_PASSWORD_HINTS)
+    }
+
+    /** What a password box says it is for. */
+    enum class BoxKind { CURRENT, PLAIN, NEW, CONFIRM }
+
+    /**
+     * Which of a form's password boxes take a new password, in screen order
+     * (the password first, then its confirmations), and which one takes the
+     * current password, if any.
+     *
+     * Boxes marked as new count, and a confirmation box confirms the plain box
+     * just before it when no box before it is marked new: "Password" then
+     * "Confirm password". With none marked, plain boxes count only beside a
+     * button that only a sign-up or change form has (newPasswordBoxes). A
+     * plain box left over is the current password.
+     */
+    fun newPasswordPlan(kinds: List<BoxKind>, signUpButton: Boolean): Pair<List<Int>, Int?> {
+        val marked = kinds.indices.filter { kinds[it] == BoxKind.NEW || kinds[it] == BoxKind.CONFIRM }
+        val fresh = if (marked.isNotEmpty()) {
+            val first = marked.first()
+            val confirmed = if (kinds[first] == BoxKind.CONFIRM) {
+                (first - 1 downTo 0).firstOrNull { kinds[it] == BoxKind.PLAIN }
+            } else {
+                null
+            }
+            listOfNotNull(confirmed) + marked
+        } else if (signUpButton) {
+            val plain = kinds.indices.filter { kinds[it] == BoxKind.PLAIN || kinds[it] == BoxKind.CURRENT }
+            newPasswordBoxes(plain.map { kinds[it] == BoxKind.CURRENT }).map { plain[it] }
+        } else {
+            emptyList()
+        }
+        val current = kinds.indices.firstOrNull {
+            it !in fresh && (kinds[it] == BoxKind.CURRENT || kinds[it] == BoxKind.PLAIN)
+        }
+        return fresh to current
+    }
+
+    /**
+     * Which of a form's plain password boxes are for a new password, given
+     * whether each says it wants the current one. None for a single box. With
+     * one marked current, all the others. Unmarked: two are a password and its
+     * confirmation; with three or more, the first is taken for the current
+     * password, as change-password forms put it first.
+     */
+    fun newPasswordBoxes(current: List<Boolean>): List<Int> {
+        if (current.size < 2) return emptyList()
+        if (current.any { it }) return current.indices.filter { !current[it] }
+        return if (current.size == 2) listOf(0, 1) else (1 until current.size).toList()
+    }
+
+    private fun isCurrentPassword(node: AssistStructure.ViewNode): Boolean {
+        if (htmlAttribute(node, "autocomplete")?.lowercase() == "current-password") return true
+        return hintsName(node, CURRENT_PASSWORD_HINTS)
     }
 
     private fun isPassword(node: AssistStructure.ViewNode): Boolean {

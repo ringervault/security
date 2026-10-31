@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Declares the autofill service to the system. settingsActivity is what the
+  system settings screen opens when the user taps the service's gear.
+  supportsInlineSuggestions lets keyboards that can (Gboard) show the
+  suggestions as chips in their top strip (KeyboardChips).
+-->
+<autofill-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="com.ringer.vault.MainActivity"
+    android:supportsInlineSuggestions="true"/>
