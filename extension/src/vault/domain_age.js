@@ -6,8 +6,8 @@
 // domain proves nothing (one can be bought), so age only ever warns.
 //
 // Asked only when a login is about to be used or saved on a site it is not
-// linked to, never for ordinary fills, and only once the user has turned it
-// on in Settings (it is off until then). The question goes straight to the
+// linked to, never for ordinary fills, and not once the user has turned it
+// off in Settings (it is on until then). The question goes straight to the
 // registry for the domain's ending (found through IANA's public list), which
 // learns which domain was asked about; no third party is in between. Nothing
 // else goes with it: no cookies, no referrer, and the answer is kept in

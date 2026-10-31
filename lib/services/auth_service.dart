@@ -132,29 +132,25 @@ class AuthService {
   }
 
   /// Whether the autofill screen may ask a domain registry how new a site
-  /// is (lib/autofill/domain_age.dart). Off until the user turns it on: it
-  /// is the one check that tells someone else which site is open.
+  /// is (lib/autofill/domain_age.dart): only the site's name, to the
+  /// registry for its ending, and never in Strict Offline Mode. On unless
+  /// the user turns it off in Settings. A device setting, the same in either
+  /// vault, so it says nothing about which is open.
   static const String _siteAgeCheckKey = 'site_age_check';
 
-  Future<bool> isSiteAgeCheckEnabled() async =>
-      await _secureStorage.read(key: _siteAgeCheckKey) == 'true';
+  /// Set when the check used to be offered once, before it was on by
+  /// default. Offered and never turned on means the user said "Not now",
+  /// and that answer stands.
+  static const String _siteAgeOfferedKey = 'site_age_check_offered';
+
+  Future<bool> isSiteAgeCheckEnabled() async {
+    final chosen = await _secureStorage.read(key: _siteAgeCheckKey);
+    if (chosen != null) return chosen == 'true';
+    return await _secureStorage.read(key: _siteAgeOfferedKey) == null;
+  }
 
   Future<void> setSiteAgeCheck(bool enabled) =>
       _secureStorage.write(key: _siteAgeCheckKey, value: enabled ? 'true' : 'false');
-
-  /// Whether the new-site check has been offered: asked once, the first
-  /// time a login is filled or saved on a site it is not linked to, and
-  /// never again whatever the answer (Settings keeps the switch). A device
-  /// setting, the same in either vault, so it says nothing about which is
-  /// open.
-  static const String _siteAgeOfferedKey = 'site_age_check_offered';
-
-  Future<bool> takeSiteAgeCheckOffer() async {
-    if (await _secureStorage.read(key: _siteAgeOfferedKey) != null) return false;
-    if (await isSiteAgeCheckEnabled()) return false;
-    await _secureStorage.write(key: _siteAgeOfferedKey, value: 'asked');
-    return true;
-  }
 
   static const String _strictModeKey = 'strict_offline_mode';
   final _strictModeController = StreamController<bool>.broadcast();

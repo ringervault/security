@@ -14,7 +14,7 @@ import 'package:http/http.dart' as http;
 ///
 /// Asked only at the moment a login is about to be used or saved on a site
 /// it is not linked to, never for ordinary fills, never in Strict Offline
-/// Mode, and only once the user has turned it on in Settings (it is off
+/// Mode, and not once the user has turned it off in Settings (it is on
 /// until then). The question goes straight to the registry that runs the
 /// domain's ending (found through IANA's public list), which learns which
 /// domain was asked about; no third party is in between. Answers are kept
