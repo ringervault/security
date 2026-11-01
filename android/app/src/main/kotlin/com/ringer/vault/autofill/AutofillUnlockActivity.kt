@@ -1,14 +1,17 @@
 package com.ringer.vault.autofill
 
 import android.app.PendingIntent
+import android.app.assist.AssistStructure
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.service.autofill.Dataset
+import android.service.autofill.FillResponse
 import android.view.WindowManager
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
 import android.view.autofill.AutofillValue
+import android.view.inputmethod.InlineSuggestionsRequest
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import com.ringer.vault.R
@@ -157,6 +160,9 @@ class AutofillUnlockActivity : FlutterFragmentActivity() {
             finish()
             return
         }
+        // Closed by Back or any way other than "cancel", the answer is the
+        // same as for "cancel"; filling replaces it.
+        setCancelledResult()
         // Same rule as the rest of the app: nothing showing a secret may be
         // screenshotted or appear in the recents preview.
         window.setFlags(
@@ -199,7 +205,7 @@ class AutofillUnlockActivity : FlutterFragmentActivity() {
                         result.success(true)
                     }
                     "cancel" -> {
-                        setResult(RESULT_CANCELED)
+                        setCancelledResult()
                         finish()
                         result.success(true)
                     }
@@ -349,10 +355,56 @@ class AutofillUnlockActivity : FlutterFragmentActivity() {
         finish()
     }
 
+    /**
+     * Closed without unlocking. For a fill, the offer goes back to Android,
+     * so the row (or keyboard chip) is there again for another try: Android
+     * drops it once it has been tapped, and showed nothing more until the
+     * box lost and regained the cursor. Anything else is simply cancelled.
+     */
+    private fun setCancelledResult() {
+        val offer = if (mode == MODE_AUTOFILL && pendingSave == null) offerAgain() else null
+        if (offer == null) {
+            setResult(RESULT_CANCELED)
+        } else {
+            setResult(RESULT_OK, Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, offer))
+        }
+    }
+
+    /**
+     * The offer this screen was opened from, made again from the form
+     * Android handed over with the request, or null when there is none.
+     */
+    private fun offerAgain(): FillResponse? {
+        val structure = intentExtra(AutofillManager.EXTRA_ASSIST_STRUCTURE, AssistStructure::class.java)
+            ?: return null
+        val form = StructureParser.parse(structure)
+        if (!form.isUsable || form.isSignUp) return null
+        val chips = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            KeyboardChips.of(
+                this,
+                intentExtra(AutofillManager.EXTRA_INLINE_SUGGESTIONS_REQUEST, InlineSuggestionsRequest::class.java),
+            )
+        } else {
+            null
+        }
+        // The same request again, without what Android added to it, which it
+        // adds afresh when the row is tapped.
+        val again = Intent(intent).setFlags(0).apply {
+            removeExtra(AutofillManager.EXTRA_ASSIST_STRUCTURE)
+            removeExtra(AutofillManager.EXTRA_CLIENT_STATE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                removeExtra(AutofillManager.EXTRA_INLINE_SUGGESTIONS_REQUEST)
+            }
+        }
+        return UnlockOffer.response(this, form, again, chips, next = null)
+    }
+
+    private fun intentExtraAutofillId(key: String): AutofillId? = intentExtra(key, AutofillId::class.java)
+
     @Suppress("DEPRECATION")
-    private fun intentExtraAutofillId(key: String): AutofillId? =
+    private fun <T : android.os.Parcelable> intentExtra(key: String, type: Class<T>): T? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(key, AutofillId::class.java)
+            intent.getParcelableExtra(key, type)
         } else {
             intent.getParcelableExtra(key)
         }

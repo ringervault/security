@@ -71,8 +71,15 @@ class KeyboardChips @RequiresApi(Build.VERSION_CODES.R) private constructor(
         /** Chips for [request], or null when the keyboard asked for none. */
         fun of(context: Context, request: FillRequest): KeyboardChips? {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
-            val inline = request.inlineSuggestionsRequest ?: return null
-            return KeyboardChips(context, inline)
+            return of(context, request.inlineSuggestionsRequest)
         }
+
+        /**
+         * Chips for the keyboard's [request] as Android hands it to the
+         * unlock screen, or null when there is none.
+         */
+        @RequiresApi(Build.VERSION_CODES.R)
+        fun of(context: Context, request: InlineSuggestionsRequest?): KeyboardChips? =
+            request?.let { KeyboardChips(context, it) }
     }
 }
