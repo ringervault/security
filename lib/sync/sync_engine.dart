@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import 'package:crypto/crypto.dart';
+import 'package:ringer_vault/subscription/redeem_code.dart';
 import 'package:ringer_vault/sync/sync_cipher.dart';
 import 'package:ringer_vault/sync/sync_merge.dart';
 import 'package:ringer_vault/sync/sync_payload.dart';
@@ -159,7 +160,36 @@ class SyncEngine {
     this.marks,
     DateTime Function()? clock,
     this.maxAttempts = 3,
+    this.entitlement,
+    this.codeGrants,
+    this.takeCodeGrants,
   }) : clock = clock ?? (() => DateTime.now().toUtc());
+
+  /// This phone's record of the subscription, written into the file for the
+  /// extension (SyncPayload.entitlement); null when it has none.
+  final Map<String, Object?>? Function()? entitlement;
+
+  /// The redeem codes this phone knows were redeemed, for the file
+  /// (SyncPayload.codeGrants), and where the file's own go, so each code
+  /// counts on every device and is used once.
+  final List<Map<String, Object?>> Function()? codeGrants;
+  final Future<void> Function(List<Map<String, Object?>> grants)? takeCodeGrants;
+
+  /// The fingerprint remembered after a sync: the vault's, and what this
+  /// phone would write about the subscription. Either changing means the
+  /// file may need writing, even with no entry changed: a code redeemed, or
+  /// Play confirming the subscription on a new day.
+  String _markOf(String vaultHash) {
+    final e = entitlement?.call();
+    final grants = codeGrants?.call() ?? const [];
+    if (e == null && grants.isEmpty) return vaultHash;
+    final plan = [
+      vaultHash,
+      if (e != null) '${e['purchaseJson']}|${'${e['confirmedAt']}'.split('T').first}',
+      for (final g in grants) '${g['code']}@${g['redeemedAt']}',
+    ].join('\n');
+    return sha256.convert(utf8.encode(plan)).toString();
+  }
 
   /// [acceptOlder] lets one run use a Drive copy older than the last one
   /// accepted ([SyncRolledBack]), after the user has re-entered the sync
@@ -200,7 +230,7 @@ class SyncEngine {
       if (info == null && mark != null) throw const SyncRemoteGone();
 
       final local = vault.snapshot();
-      final localHash = await compute(hashOf, local);
+      final localHash = _markOf(await compute(hashOf, local));
       if (info != null &&
           mark != null &&
           info.version == mark.version &&
@@ -220,6 +250,8 @@ class SyncEngine {
       // we could not read it would destroy it.
       var remote = <String, SyncRecord>{};
       var remoteGeneration = 0;
+      Map<String, Object?>? remoteEntitlement;
+      var remoteGrants = const <Map<String, Object?>>[];
       if (info != null) {
         report(0.1, 'Downloading backup');
         final content = await transport.fetch(
@@ -242,7 +274,13 @@ class SyncEngine {
         }
         remote = payload.records;
         remoteGeneration = payload.generation;
+        remoteEntitlement = payload.entitlement;
+        remoteGrants = payload.codeGrants ?? const [];
+        if (remoteGrants.isNotEmpty) await takeCodeGrants?.call(remoteGrants);
       }
+      final localEntitlement = entitlement?.call();
+      // Taken in above, so this phone's list now holds the file's too.
+      final localGrants = codeGrants?.call() ?? const <Map<String, Object?>>[];
       final seenGeneration = mark?.generation ?? 0;
       final nextGeneration =
           generationStep(found: remoteGeneration, seen: seenGeneration, acceptOlder: true)!;
@@ -254,7 +292,13 @@ class SyncEngine {
           await compute(_plan, (local, remote, clock()));
       // An older copy taken on purpose is always written back, numbered
       // above everything seen, so other devices take it too.
-      final needsUpload = mergedDiffers || (acceptOlder && remoteGeneration < seenGeneration);
+      // A newer confirmation of the subscription is written too, even with
+      // no entry changed, or the extension would take a renewed subscription
+      // for one that had run out.
+      final needsUpload = mergedDiffers ||
+          (acceptOlder && remoteGeneration < seenGeneration) ||
+          entitlementBehind(remoteEntitlement, localEntitlement) ||
+          grantsBehind(remoteGrants, localGrants);
 
       // Nothing is written anywhere unless every entry coming in can be.
       final unreadable = result.upsertLocally.where((id) => !vault.canStore(result.merged[id]!)).length;
@@ -303,6 +347,10 @@ class SyncEngine {
           writtenBy: deviceId,
           writtenAt: clock(),
           generation: nextGeneration,
+          // Kept when this phone has none: a phone that never subscribed
+          // must not wipe the record another one wrote.
+          entitlement: localEntitlement ?? remoteEntitlement,
+          codeGrants: _allGrants(remoteGrants, localGrants),
         );
         final version = await transport.upload(
           await payload.encrypt(cipher),
@@ -332,7 +380,7 @@ class SyncEngine {
         await marks?.save(
           SyncMark(
             version: version,
-            localHash: await compute(hashOf, vault.snapshot()),
+            localHash: _markOf(await compute(hashOf, vault.snapshot())),
             generation: needsUpload ? nextGeneration : remoteGeneration,
           ),
         );
@@ -376,3 +424,36 @@ class SyncEngine {
     return true;
   }
 }
+
+/// Whether this phone knows of a redeemed code the file does not hold.
+@visibleForTesting
+bool grantsBehind(List<Map<String, Object?>> remote, List<Map<String, Object?>> local) {
+  final there = {for (final g in remote) g['code']};
+  return local.any((g) => !there.contains(g['code']));
+}
+
+/// The file's codes and this phone's together, each once. The file's are
+/// kept even when this phone has none: another device redeemed them.
+List<Map<String, Object?>> _allGrants(
+  List<Map<String, Object?>> remote,
+  List<Map<String, Object?>> local,
+) {
+  final grants = unionOfGrants(
+    [for (final g in remote) ?CodeGrant.fromJson(g)],
+    [for (final g in local) ?CodeGrant.fromJson(g)],
+  );
+  return [for (final g in grants) g.toJson()];
+}
+
+/// Whether the file's record of the subscription is behind this phone's: a
+/// different purchase, or one confirmed more than a day earlier.
+@visibleForTesting
+bool entitlementBehind(Map<String, Object?>? remote, Map<String, Object?>? local) {
+  if (local == null) return false;
+  if (remote == null || remote['purchaseJson'] != local['purchaseJson']) return true;
+  final there = DateTime.tryParse('${remote['confirmedAt']}');
+  final here = DateTime.tryParse('${local['confirmedAt']}');
+  if (here == null) return false;
+  return there == null || here.difference(there) > const Duration(days: 1);
+}
+

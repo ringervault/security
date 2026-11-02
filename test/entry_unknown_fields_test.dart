@@ -48,7 +48,7 @@ void main() {
     late RenderHarness harness;
     setUp(() async {
       harness = RenderHarness();
-      await harness.setUp(pin: '482916');
+      await harness.setUp(pin: '135790');
     });
     tearDown(() => harness.tearDown());
 
@@ -57,7 +57,7 @@ void main() {
       await StorageService().updateEntry(
           StorageService().getEntries().single.copyWith(title: 'Amazon India'));
       await AuthService().logout();
-      expect(await AuthService().verifyPin('482916'), isTrue);
+      expect(await AuthService().verifyPin('135790'), isTrue);
       final json = StorageService().getEntries().single.toJson();
       expect(json['title'], 'Amazon India');
       expect(json['shareGrants'], record()['shareGrants']);

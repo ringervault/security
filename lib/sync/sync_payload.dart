@@ -33,11 +33,26 @@ class SyncPayload {
   /// accepted, whatever any clock says. 0 for files from before it existed.
   final int generation;
 
+  /// Google Play's signed record of the subscription, as the phone last
+  /// confirmed it (lib/subscription/entitlement.dart), or null. Added inside
+  /// version 2 without raising it: older readers skip a field they do not
+  /// know. The browser extension checks Google's signature on it to know the
+  /// user has subscribed; nothing else reads it.
+  final Map<String, Object?>? entitlement;
+
+  /// Ringer Vault's own redeem codes, as redeemed on any device of this
+  /// vault (lib/subscription/redeem_code.dart), or null. Added inside
+  /// version 2 like [entitlement]. The extension checks each code's
+  /// signature itself; phones take them in, so a code counts once.
+  final List<Map<String, Object?>>? codeGrants;
+
   const SyncPayload({
     required this.records,
     required this.writtenBy,
     required this.writtenAt,
     this.generation = 0,
+    this.entitlement,
+    this.codeGrants,
   });
 
   String toJsonString() => jsonEncode({
@@ -46,6 +61,8 @@ class SyncPayload {
         'writtenBy': writtenBy,
         'writtenAt': writtenAt.toUtc().toIso8601String(),
         'generation': generation,
+        if (entitlement != null) 'entitlement': entitlement,
+        if (codeGrants != null && codeGrants!.isNotEmpty) 'codeGrants': codeGrants,
         'records': [for (final r in records.values) r.toJson()],
       });
 
@@ -106,6 +123,17 @@ class SyncPayload {
       writtenAt: DateTime.tryParse('${decoded['writtenAt']}')?.toUtc() ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       generation: generation,
+      entitlement: decoded['entitlement'] is Map
+          ? Map<String, Object?>.from(decoded['entitlement'] as Map)
+          : null,
+      // A damaged list counts as none, like a damaged entitlement: it is
+      // never worth refusing the entries over.
+      codeGrants: decoded['codeGrants'] is List
+          ? [
+              for (final g in decoded['codeGrants'] as List)
+                if (g is Map) Map<String, Object?>.from(g),
+            ]
+          : null,
     );
   }
 

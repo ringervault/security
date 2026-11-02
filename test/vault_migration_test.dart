@@ -51,7 +51,7 @@ class _FakeSecureStorage {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const primaryPin = '482916';
+  const primaryPin = '135790';
   const decoyPin = '246801';
 
   late _FakeSecureStorage storage;

@@ -27,6 +27,7 @@ flutter pub outdated
 | local_auth (+ _android, _darwin) | 2.3.0 (1.0.56, 1.6.1) | Fingerprint unlock |
 | hive, hive_flutter | 2.2.3, 1.1.0 | The device security log, and reading vaults from older versions. Not actively maintained; see SECURITY.md |
 | google_sign_in (+ _platform_interface) | 7.2.0 (3.1.0) | Google Drive sync sign-in |
+| in_app_purchase (+ _android) | 3.3.1 (0.5.5) | The subscription, through Google Play Billing (docs/SUBSCRIPTION.md). Adds Android's BILLING permission |
 | http | 1.6.0 | Drive, a website's app list, the new-site check |
 | connectivity_plus | 6.1.5 | Strict Offline Mode's network check |
 | safe_device | 1.3.8 | Root check only |

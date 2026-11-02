@@ -11,7 +11,7 @@ import 'support/render_harness.dart';
 /// towards the lockout.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const pin = '482916';
+  const pin = '135790';
   late RenderHarness harness;
 
   setUp(() async {

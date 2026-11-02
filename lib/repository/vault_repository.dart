@@ -154,7 +154,7 @@ class VaultRepository {
     final identity = await _takeOldDecoyIdentity();
     if (_storageService.getEntries().isNotEmpty) return;
 
-    for (final entry in buildDecoyEntries(identity, Random.secure())) {
+    for (final entry in withinPlan(buildDecoyEntries(identity, Random.secure()))) {
       await _storageService.addEntry(entry);
     }
   }
@@ -205,6 +205,29 @@ class VaultRepository {
       details: category,
     );
     return true;
+  }
+
+  /// [name] as the open vault already spells it, or added to its own
+  /// categories: one made up on the save sheet, where the vault's own list
+  /// cannot be shown while it is locked. Called once the login is in, so a
+  /// login refused (a full free plan) leaves no empty category behind; the
+  /// login itself is given [categorySpelled].
+  Future<String> categoryNamed(String name) async {
+    final spelled = await categorySpelled(name);
+    final known = [...defaultCategoryNames, ...await getCustomCategories()];
+    if (!known.contains(spelled)) await addCustomCategory(spelled);
+    return spelled;
+  }
+
+  /// [name] as the open vault already spells it, or as typed when it is a
+  /// new one. Nothing is added ([categoryNamed] does that).
+  Future<String> categorySpelled(String name) async {
+    final wanted = name.trim();
+    if (wanted.isEmpty) return defaultCategoryNames.first;
+    for (final known in [...defaultCategoryNames, ...await getCustomCategories()]) {
+      if (known.toLowerCase() == wanted.toLowerCase()) return known;
+    }
+    return wanted;
   }
 
   Future<bool> renameCustomCategory(String oldName, String newName) async {

@@ -17,7 +17,7 @@ import 'support/render_harness.dart';
 /// the real vault, and what it writes has to stay in the decoy.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const pin = '482916';
+  const pin = '135790';
   const decoyPin = '246801';
   final storage = StorageService();
   final repository = VaultRepository();

@@ -44,8 +44,10 @@ import 'package:ringer_vault/autofill/lookalike.dart';
 import 'package:ringer_vault/autofill/registrable_domain.dart';
 import 'package:ringer_vault/autofill/suggest.dart';
 import 'package:ringer_vault/models/vault_entry.dart';
+import 'package:ringer_vault/repository/vault_repository.dart';
 import 'package:ringer_vault/services/activity_log_service.dart';
 import 'package:ringer_vault/services/storage_service.dart';
+import 'package:ringer_vault/subscription/plan.dart';
 import 'package:ringer_vault/services/vault_container.dart';
 
 /// A login typed into another app or a website, saved without an unlock.
@@ -461,6 +463,11 @@ const String inboxNoticeMeta = 'inboxNotice';
 /// The meta key for logins waiting for an answer (InboxQuestion).
 const String inboxQuestionMeta = 'inboxQuestions';
 
+/// In the vault's meta: how many logins are still in the inbox because the
+/// free plan is full (lib/subscription/plan.dart). They are taken in once
+/// there is room or a subscription; the home screen says they are waiting.
+const String inboxWaitingMeta = 'inboxWaitingForRoom';
+
 /// Takes the open vault's waiting logins into it: a new password for an
 /// account already linked to that app or site updates it (the old one goes
 /// into its history); one that only looks like an existing entry waits as a
@@ -481,15 +488,27 @@ Future<void> takeSaveInbox() async {
     await inbox.publish(privateKey, slot);
 
     final waiting = await inbox.open(privateKey, slot);
-    if (waiting.isEmpty) return;
+    if (waiting.isEmpty) {
+      await storage.setMetaValue(inboxWaitingMeta, null);
+      return;
+    }
 
     final notices = [
       for (final raw in storage.metaValue(inboxNoticeMeta) as List? ?? const [])
         if (InboxNotice.fromJson(raw) case final n?) n,
     ];
     final questions = inboxQuestions();
+    var heldForRoom = 0;
     for (final (file, login) in waiting) {
-      switch (await _take(storage, login)) {
+      final Object? taken;
+      try {
+        taken = await _take(storage, login);
+      } on FreePlanFull {
+        // No room on the free plan: left in the inbox, never dropped.
+        heldForRoom++;
+        continue;
+      }
+      switch (taken) {
         case final InboxNotice notice:
           notices.add(notice);
         case final InboxQuestion question:
@@ -497,6 +516,7 @@ Future<void> takeSaveInbox() async {
       }
       await inbox.spend(file, slot);
     }
+    await storage.setMetaValue(inboxWaitingMeta, heldForRoom == 0 ? null : heldForRoom);
     await storage.setMetaValue(inboxNoticeMeta, [for (final n in notices) n.toJson()]);
     await storage.setMetaValue(
       inboxQuestionMeta,
@@ -505,6 +525,17 @@ Future<void> takeSaveInbox() async {
   } catch (_) {
     // Left in the inbox for the next unlock.
   }
+}
+
+/// Whether the login sealed at [savedAt] is still in the open vault's
+/// inbox: opening takes it in (takeSaveInbox) unless the free plan is full.
+Future<bool> stillWaiting(DateTime savedAt) async {
+  final storage = StorageService();
+  final slot = storage.openSlot;
+  final stored = storage.metaValue(inboxKeyMeta);
+  if (slot == null || stored is! String) return false;
+  final waiting = await SaveInbox().open(base64Decode(stored), slot);
+  return waiting.any((w) => w.$2.savedAt.isAtSameMomentAs(savedAt));
 }
 
 /// The open vault's logins waiting for an answer.
@@ -563,16 +594,19 @@ Future<void> _update(StorageService storage, VaultEntry into, InboxLogin login, 
   ));
 }
 
-Future<void> _addNew(StorageService storage, InboxLogin login, AutofillTarget? target) {
+Future<void> _addNew(StorageService storage, InboxLogin login, AutofillTarget? target) async {
   final typedUser = login.username.trim();
-  return storage.addEntry(VaultEntry(
+  final category = await VaultRepository().categorySpelled(login.category);
+  await storage.addEntry(VaultEntry(
     title: login.title,
     username: typedUser.contains('@') ? '' : typedUser,
     email: typedUser.contains('@') ? typedUser : '',
     password: login.password,
-    category: login.category,
+    category: category,
     autofillTargets: [if (target != null) target.encode()],
   ));
+  // Only once it is in: a full free plan leaves no empty category behind.
+  await VaultRepository().categoryNamed(category);
 }
 
 Future<void> _logSave({

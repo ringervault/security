@@ -11,7 +11,7 @@ void main() {
     const type = UnlockSecretType.pin;
 
     test('accepts six unremarkable digits', () {
-      expect(validateUnlockSecret('482916', type), isNull);
+      expect(validateUnlockSecret('135790', type), isNull);
       expect(validateUnlockSecret('999111', type), isNull);
     });
 

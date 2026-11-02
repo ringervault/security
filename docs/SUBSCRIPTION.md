@@ -61,8 +61,9 @@ two kinds:
   the same vault cannot use the same code again.
 
 Make them with `node tool/codes/make_codes.mjs --plan week --redeem-by
-2026-12-31 --count 5`. The signing key stays on the computer that makes
-codes; it is in no repository.
+2026-12-31 --count 5`. The signing key is `secrets/code-signing-key.pem`,
+on the computer that makes codes only: never commit or share it, and back
+it up (`secrets/README.md`).
 
 Own codes are given away, never sold: Google Play's rules require its own
 billing for anything paid. With no server, a code cannot be stopped from
@@ -111,10 +112,9 @@ the simple cases.
 | | |
 |---|---|
 | Free plan rules | `lib/subscription/plan.dart`, `extension/src/vault/plan.js` |
-| What Play said, and how long it holds | `lib/subscription/entitlement.dart` |
-| The extension's signature check | `extension/src/vault/plan.js` (`verifyPurchase`, `subscriptionIn`) |
-| Redeem codes | `lib/subscription/redeem_code.dart`, `extension/src/vault/codes.js`, `tool/codes/make_codes.mjs`; format in `docs/FORMATS.md`, section 10 |
-| Tests | `extension/test/plan.test.mjs`, `extension/test/codes.test.mjs`, `test/redeem_code_cases_test.dart` (both run `test/fixtures/code_cases.json`) |
-
-The app's Google Play code, its screens, and the place every way of adding
-a login checks the limit are not part of this repository.
+| What Play said, and how long it holds | `lib/subscription/entitlement.dart`, `subscription_service.dart` |
+| Google Play | `lib/subscription/store.dart` |
+| Redeem codes | `lib/subscription/redeem_code.dart`, `lib/widgets/redeem_sheet.dart`, `extension/src/vault/codes.js`, `tool/codes/make_codes.mjs` |
+| The limit, for every way of adding | `StorageService._checkRoom` |
+| The offer | `lib/widgets/subscribe_sheet.dart` |
+| Tests | `test/subscription_test.dart`, `test/redeem_code_test.dart`, `extension/test/plan.test.mjs`, `extension/test/free_plan.test.mjs`, `extension/test/codes.test.mjs` |

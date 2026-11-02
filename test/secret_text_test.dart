@@ -21,7 +21,7 @@ void main() {
   tearDown(() => SecretText.debugNfc = null);
 
   test('plain ASCII is left exactly as it is', () async {
-    expect(await SecretText.forms('482916'), ['482916']);
+    expect(await SecretText.forms('135790'), ['135790']);
     expect(await SecretText.forms('Lantern-Harbor-Cedar-99'), ['Lantern-Harbor-Cedar-99']);
   });
 
@@ -44,7 +44,7 @@ void main() {
     late RenderHarness harness;
     setUp(() async {
       harness = RenderHarness();
-      await harness.setUp(pin: '482916');
+      await harness.setUp(pin: '135790');
     });
     tearDown(() => harness.tearDown());
 

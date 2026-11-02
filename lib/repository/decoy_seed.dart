@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:ringer_vault/models/vault_entry.dart';
+import 'package:ringer_vault/subscription/plan.dart';
+import 'package:ringer_vault/subscription/subscription_service.dart';
 
 /// Who the decoy vault appears to belong to.
 ///
@@ -422,3 +424,10 @@ DecoyIdentity _inventedIdentity(Random random) {
     email: '$local@${domains[random.nextInt(domains.length)]}',
   );
 }
+
+/// [entries] trimmed to what the free plan holds when there is no
+/// subscription: a decoy that held more than a free vault can would give
+/// itself away on a phone that never subscribed.
+List<VaultEntry> withinPlan(List<VaultEntry> entries) =>
+    SubscriptionService.instance.isSubscribed ? entries : entries.take(freeLogins).toList();
+

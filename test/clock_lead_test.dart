@@ -16,7 +16,7 @@ void main() {
 
   setUp(() async {
     harness = RenderHarness();
-    await harness.setUp(pin: '482916');
+    await harness.setUp(pin: '135790');
     await storage.applySyncedEntry(VaultEntry(
       id: 'future', title: 'From a wrong clock', username: 'u', password: 'p',
       category: 'Social', updatedAt: farAhead, createdAt: farAhead,

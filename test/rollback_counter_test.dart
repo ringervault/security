@@ -11,7 +11,7 @@ import 'support/render_harness.dart';
 /// off: a vault written more than once without one is refused.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const pin = '482916';
+  const pin = '135790';
   late RenderHarness harness;
   final storage = StorageService();
 

@@ -16,7 +16,7 @@ import 'support/render_harness.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const pin = '482916';
+  const pin = '135790';
   const decoyPin = '246801';
   late RenderHarness harness;
   final storage = StorageService();

@@ -22,6 +22,8 @@ dependencies:
   crypto: ^3.0.3
   cryptography: ^2.7.0
   http: ^1.6.0
+  in_app_purchase: ^3.3.1
+  in_app_purchase_android: ^0.5.5
 
 dev_dependencies:
   flutter_test:

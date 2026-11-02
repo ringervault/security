@@ -10,6 +10,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:ringer_vault/models/vault_entry.dart';
 import 'package:ringer_vault/services/save_inbox.dart';
 import 'package:ringer_vault/services/security_guard.dart';
+import 'package:ringer_vault/subscription/plan.dart';
+import 'package:ringer_vault/subscription/subscription_service.dart';
 import 'package:ringer_vault/services/vault_cipher.dart';
 import 'package:ringer_vault/services/vault_container.dart';
 import 'package:ringer_vault/services/vault_lock.dart';
@@ -683,15 +685,31 @@ class StorageService {
 
   Future<void> addEntry(VaultEntry entry) async {
     OfflineGuard.ensureOffline(); // Security Check
+    _checkRoom(_require.entries.containsKey(entry.id) ? 0 : 1);
     entry.updatedAt = nextStamp();
     _require.entries[entry.id] = entry;
     await _save();
   }
 
+  /// Room on the free plan for [adding] new logins, or [FreePlanFull]
+  /// (lib/subscription/plan.dart). Every way of adding a login comes through
+  /// here; editing, deleting and syncing do not, so nothing already saved is
+  /// ever held back.
+  void _checkRoom(int adding) {
+    if (adding == 0) return;
+    final count = _require.entries.length;
+    final room = SubscriptionService.instance.roomFor(count);
+    if (adding > room) throw FreePlanFull(count: count, wanted: adding, room: room);
+  }
+
+  /// Room for new logins in the open vault on the current plan.
+  int get roomForLogins => SubscriptionService.instance.roomFor(_require.entries.length);
+
   /// Adds many entries in one write, as an import does: one change for sync
   /// to pick up instead of hundreds, and all or nothing on disk.
   Future<void> addEntries(List<VaultEntry> entries) async {
     OfflineGuard.ensureOffline(); // Security Check
+    _checkRoom(entries.where((e) => !_require.entries.containsKey(e.id)).length);
     final at = nextStamp();
     for (final e in entries) {
       e.updatedAt = at;
@@ -965,12 +983,16 @@ class StorageService {
         taken[e.id] = e;
       }
       if (taken.isEmpty) return 0;
+      _checkRoom(taken.keys.where((id) => !open.entries.containsKey(id)).length);
       open.entries.addAll(taken);
       for (final id in taken.keys) {
         open.deleted.remove(id);
       }
       await _save();
       return taken.length;
+    } on FreePlanFull {
+      // Not a damaged file: the caller offers a subscription or a choice.
+      rethrow;
     } catch (e) {
       // If parsing fails, nothing is written.
       throw Exception('Invalid data format or Import failed: $e');

@@ -23,7 +23,7 @@ import '../test/support/render_harness.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  const pin = '482916';
+  const pin = '135790';
   const decoyPin = '246801';
   const rounds = 9;
 

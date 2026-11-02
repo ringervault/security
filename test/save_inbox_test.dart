@@ -17,7 +17,7 @@ import 'support/render_harness.dart';
 /// each vault, and the files never say whether a decoy exists.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const pin = '482916';
+  const pin = '135790';
   const decoyPin = '246801';
   final storage = StorageService();
   late RenderHarness harness;

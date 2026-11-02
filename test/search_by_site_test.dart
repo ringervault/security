@@ -52,7 +52,7 @@ void main() {
     late RenderHarness harness;
     setUp(() async {
       harness = RenderHarness();
-      await harness.setUp(pin: '482916', entries: [amazon, bankApp, other]);
+      await harness.setUp(pin: '135790', entries: [amazon, bankApp, other]);
     });
     tearDown(() => harness.tearDown());
 

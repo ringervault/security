@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ringer_vault/services/storage_service.dart';
@@ -33,6 +34,8 @@ void main() {
     int maxAttempts = 3,
     SyncCipher? cipher,
     MemoryMarks? marks,
+    List<Map<String, Object?>> Function()? codeGrants,
+    Future<void> Function(List<Map<String, Object?>>)? takeCodeGrants,
   }) =>
       SyncEngine(
         transport: remote,
@@ -44,6 +47,8 @@ void main() {
         marks: marks,
         clock: () => now,
         maxAttempts: maxAttempts,
+        codeGrants: codeGrants,
+        takeCodeGrants: takeCodeGrants,
       );
 
   group('the ordinary path', () {
@@ -100,6 +105,63 @@ void main() {
 
       expect(outcome.pushed, isFalse);
       expect(remote.writes, writes);
+    });
+  });
+
+  group('redeem codes', () {
+    final cases = jsonDecode(File('test/fixtures/code_cases.json').readAsStringSync()) as Map;
+    String code(String why) =>
+        (cases['codes'] as List).firstWhere((c) => c['why'] == why)['code'] as String;
+    Map<String, Object?> grant(String why) =>
+        {'code': code(why), 'redeemedAt': '2026-09-01T12:00:00.000Z'};
+    Future<List<Map<String, Object?>>?> inFile(FakeTransport remote) async =>
+        (await SyncPayload.decrypt(remote.content!, SyncCipher(passphrase))).codeGrants;
+
+    test('a code redeemed with no login changed still reaches the file', () async {
+      final remote = FakeTransport();
+      final marks = MemoryMarks();
+      final phone = MemoryVault()..edit('a', 'pw', now);
+      var grants = <Map<String, Object?>>[];
+      SyncEngine engine() => device(phone, remote, marks: marks, codeGrants: () => grants);
+      await engine().run();
+
+      grants = [grant('one week')];
+      final outcome = await engine().run();
+
+      expect(outcome.upToDate, isFalse);
+      expect(outcome.pushed, isTrue);
+      expect(await inFile(remote), [grant('one week')]);
+      expect((await engine().run()).upToDate, isTrue, reason: 'and then nothing more to do');
+    });
+
+    test('another device takes in the codes the file holds', () async {
+      final remote = FakeTransport();
+      final phone = MemoryVault()..edit('a', 'pw', now);
+      await device(phone, remote, codeGrants: () => [grant('one month')]).run();
+
+      List<Map<String, Object?>>? taken;
+      await device(MemoryVault(), remote, id: 'tablet', takeCodeGrants: (g) async => taken = g).run();
+
+      expect(taken, [grant('one month')]);
+    });
+
+    test('a device with none keeps the codes another one wrote', () async {
+      final remote = FakeTransport();
+      final phone = MemoryVault()..edit('a', 'pw', now);
+      await device(phone, remote, codeGrants: () => [grant('lifetime')]).run();
+
+      final tablet = MemoryVault()..edit('b', 'pw-b', tick());
+      await device(tablet, remote, id: 'tablet').run();
+
+      expect(await inFile(remote), [grant('lifetime')]);
+    });
+
+    test('codes from two devices are both kept', () async {
+      final remote = FakeTransport();
+      await device(MemoryVault()..edit('a', 'pw', now), remote, codeGrants: () => [grant('one day')]).run();
+      await device(MemoryVault(), remote, id: 'tablet', codeGrants: () => [grant('one year')]).run();
+
+      expect((await inFile(remote))!.map((g) => g['code']).toSet(), {code('one day'), code('one year')});
     });
   });
 

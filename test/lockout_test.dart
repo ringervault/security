@@ -12,7 +12,7 @@ import 'support/render_harness.dart';
 /// own clock cannot end a lockout early.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const pin = '482916';
+  const pin = '135790';
   late RenderHarness harness;
 
   // A clock the test moves: the wall clock, time since boot, and the boot.

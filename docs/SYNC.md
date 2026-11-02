@@ -123,6 +123,55 @@ replaces a copy it cannot read, because that copy is another device's data.
   not parse, or holds an entry this device cannot store is refused with an
   alert before anything is written on either side.
 
+## Google credentials
+
+Configured on 2026-09-29 in the Google Cloud project `ringer-vault`
+(account mojestreaming@gmail.com).
+
+| What | Value |
+|---|---|
+| Consent screen | App name "Ringer Vault", support email mojestreaming@gmail.com (shown to everyone who signs in), user type External |
+| Publishing status | **In production** since 2026-09-29: any Google account can sign in. No verification needed, because there is no logo, one authorized domain, and only a non-sensitive scope. Adding a logo or a sensitive scope later would require verification. |
+| Home page | https://ionized-lychee-386.notion.site/Ringer-Vault-3ea62d06f80a80778afafd5120201f90 (Notion, workspace "Moje streaming's Notion") |
+| Privacy policy | https://ionized-lychee-386.notion.site/Ringer-Vault-Privacy-Policy-3ea62d06f80a801a929ff1246c6bf913. Also required by the Play Console. The source text is `docs/site/privacy.md`; keep the two in step. |
+| Authorized domain | `ionized-lychee-386.notion.site` |
+| Scope | `drive.appdata`, which Google classifies as **non-sensitive**, so it needs no app verification on its own |
+| Web client | `493444130332-436eu60en5lva7n28ja7p6l6nt2qape9.apps.googleusercontent.com`, used by Android sign-in as the server client ID. Its secret was not saved; nothing here needs it, and a new one can be added from the client page if a server ever does. |
+| Android client (debug) | `…-ao3kl83krmkp0hbg69j5khdk2qu3kqv6`, package `ringervault.password.manager`, debug key SHA-1 `44:5E:BC:D6:EF:AC:66:78:14:54:8C:94:FE:86:A1:73:35:58:ED:A4` |
+| Android client (upload) | `…-l6kfveda68vufb6r6eg0ek5b61isqtj0`, package `ringervault.password.manager`, upload key SHA-1 `55:51:4A:49:F8:A3:6E:BC:86:DD:58:C6:D2:53:3D:01:63:D2:9B:94` (`android/upload-keystore.jks`, created 2026-09-29) |
+| Android client (Play signing) | `…-e7h4909gf74pjfoj1369kbngan8li639`, package `ringervault.password.manager`, Google Play's app signing key SHA-1 `AC:BE:CF:35:F9:6C:CD:F1:C1:B8:B8:F5:96:7A:92:C4:B6:F4:E5:89` (Play Console, Protected with Play, Manage Play app signing). Builds installed from Play are re-signed with this key; added 26 October 2026. |
+| Old Android clients | `…-am4ieib6lcp0jb31cueiej48mhi55453` (debug) and `…-sjspb48gqptidf7857t1tm0nenm08a3f` (upload), for the package `com.ringer.vault` the app had until 25 October 2026. Kept only while a phone still has that build; delete them once its vault has moved to the new one. |
+
+Android clients are never referenced in code: Google matches them by package
+name and signing key, one fingerprint per client.
+| Web client redirect URI (extension) | `https://fbjeclhjjcdkcgojmlfpkliikbibaoji.chromiumapp.org/`, under "Authorized redirect URIs" on the web client. Needed for the extension's "Use a different Google account", which signs in through Google's own window (chrome.identity.launchWebAuthFlow) because Chrome's identity always uses the account Chrome is signed in to. |
+| Chrome Extension client | `493444130332-d7b8or52u782ksnb001qgrbd3bmblqe6.apps.googleusercontent.com`, for extension ID `fbjeclhjjcdkcgojmlfpkliikbibaoji`: the Chrome Web Store item, and the unpacked copy too, since `manifest.json` carries the store's public key. (Before 22 October 2026 the unpacked copy used `eoghegloonpklmlnejphbkjaikihgdao`, from `secrets/extension-dev-key.pem`.) |
+
+Client IDs are not secrets; every shipped app contains one. The web client ID
+is built into `lib/sync/google_drive_auth.dart` as a default, so every way of
+running the app has it, including Android Studio's Run button.
+`config/google_oauth.json` (or `--dart-define=GOOGLE_WEB_CLIENT_ID=...`)
+overrides it, so a fork can point at its own project.
+
+Google notes that changes can take from 5 minutes to a few hours to apply.
+
+### Building the app
+
+    flutter run --dart-define-from-file=config/google_oauth.json
+    flutter build apk --release --dart-define-from-file=config/google_oauth.json
+
+The define is optional now; without it the built-in client ID is used.
+
+### The extension ID
+
+`chrome.identity` only issues tokens to the extension ID registered on the
+Chrome Extension client. The ID is fixed by the `key` in `manifest.json`,
+the Chrome Web Store item's public key, whose private half only the store
+holds. Loading the unpacked extension from any folder gives the same ID.
+
+`chrome.identity.getAuthToken` is Chrome's; Edge and Brave do not support it,
+and would need `launchWebAuthFlow` instead.
+
 ## Tests
 
     flutter test test/sync_merge_test.dart          # merging, 200 random histories

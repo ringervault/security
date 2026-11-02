@@ -521,7 +521,7 @@ class AuthService {
     await StorageService().seedVault(
       masterKey: key,
       isDecoy: true,
-      entries: buildDecoyEntries(identity, Random.secure()),
+      entries: withinPlan(buildDecoyEntries(identity, Random.secure())),
     );
   }
 
