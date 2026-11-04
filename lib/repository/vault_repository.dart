@@ -123,6 +123,44 @@ class VaultRepository {
     );
   }
   
+  /// Moves the entries [ids] into [category], made a category of its own
+  /// first when it is a new name. Returns the category as the vault spells it.
+  Future<String> moveEntries(Set<String> ids, String category) async {
+    final spelled = await categorySpelled(category);
+    await _storageService.moveEntries(ids, spelled);
+    await categoryNamed(spelled);
+    await _activityLog.logActivity(
+      action: 'Entries Moved',
+      details: '${ids.length} to $spelled',
+    );
+    return spelled;
+  }
+
+  Future<void> deleteEntries(Set<String> ids) async {
+    await _storageService.deleteEntries(ids);
+    await _activityLog.logActivity(
+      action: 'Entries Deleted',
+      details: '${ids.length}',
+    );
+  }
+
+  /// Where the icon and colour chosen for each category are kept: the open
+  /// vault's meta, beside its category list, so a category's look says no
+  /// more outside the vault than its name does. Category name to
+  /// `{'icon': <a name from CategoryStyle.icons>, 'color': <ARGB int>}`.
+  static const String categoryStylesKey = 'category_styles';
+
+  /// Saves the icon and [color] (ARGB) chosen for [category] (CategoryStyle).
+  Future<void> setCategoryStyle(String category, {required String icon, required int color}) async {
+    final chosen = _chosenStyles()..[category] = {'icon': icon, 'color': color};
+    await _storageService.setMetaValue(categoryStylesKey, chosen);
+  }
+
+  Map<String, dynamic> _chosenStyles() {
+    final stored = _storageService.metaValue(categoryStylesKey);
+    return stored is Map ? Map<String, dynamic>.from(stored) : {};
+  }
+
   /// Where older versions kept the name and email a new decoy's filler
   /// should carry, until the decoy was first opened. A decoy is now filled
   /// the moment it is created (AuthService.fillNewDecoy), so these are only
@@ -246,16 +284,21 @@ class VaultRepository {
     categories[index] = newName;
     await _store(_customCategoriesKey, categories);
 
-    // 2. Update Entries
-    final entries = _storageService.getEntries().where((e) => e.category == oldName).toList();
-    for (var entry in entries) {
-      // Use copyWith to create updated entry
-      final updatedEntry = entry.copyWith(category: newName);
-      // We must preserve other fields exactly. copyWith handles ID preservation if implemented correctly.
-      // Checking copyWith implementation in VaultEntry...
-      // It sets updatedAt to Now. That's probably fine/desired for a rename.
-      await _storageService.updateEntry(updatedEntry);
+    // Its place on the home screen, and its icon and colour, go with it.
+    final shown = await _stored(_dashboardCategoriesKey);
+    if (shown != null && shown.contains(oldName)) {
+      await _store(_dashboardCategoriesKey, [for (final c in shown) c == oldName ? newName : c]);
     }
+    final chosen = _chosenStyles();
+    if (chosen.remove(oldName) case final style?) {
+      await _storageService.setMetaValue(categoryStylesKey, chosen..[newName] = style);
+    }
+
+    // 2. Update Entries, in one write.
+    await _storageService.moveEntries(
+      [for (final e in _storageService.getEntries()) if (e.category == oldName) e.id],
+      newName,
+    );
     
     await _activityLog.logActivity(
       action: 'Category Renamed',

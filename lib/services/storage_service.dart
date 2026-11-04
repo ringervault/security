@@ -744,6 +744,40 @@ class StorageService {
     await _save();
   }
 
+  /// Moves the entries [ids] into [category] in one write, as one change
+  /// for sync to pick up. Ones already there, or gone, are left alone.
+  Future<void> moveEntries(Iterable<String> ids, String category) async {
+    OfflineGuard.ensureOffline(); // Security Check
+    final open = _require;
+    final moving = [
+      for (final id in ids.toSet())
+        if (open.entries[id] case final entry? when entry.category != category) entry,
+    ];
+    if (moving.isEmpty) return;
+    final at = nextStamp(outrank: {for (final e in moving) e.id});
+    for (final entry in moving) {
+      entry
+        ..category = category
+        ..updatedAt = at;
+    }
+    await _save();
+  }
+
+  /// Deletes the entries [ids] in one write, each remembered as deleted the
+  /// same way [deleteEntry] does.
+  Future<void> deleteEntries(Iterable<String> ids) async {
+    OfflineGuard.ensureOffline(); // Security Check
+    final open = _require;
+    final going = ids.where(open.entries.containsKey).toSet();
+    if (going.isEmpty) return;
+    final at = nextStamp(outrank: going);
+    for (final id in going) {
+      open.entries.remove(id);
+      if (!_isDecoyMode) open.deleted[id] = at;
+    }
+    await _save();
+  }
+
   Future<void> deleteAllEntries() async {
     OfflineGuard.ensureOffline(); // Security Check
     final open = _require;
